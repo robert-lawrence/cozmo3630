@@ -20,9 +20,9 @@ def init_fsm():
 async def trigger(fsm, event_str, robot):
     if not fsm.can(event_str):
         return # throw error?
+    past_state = fsm.current
     fsm.trigger(event_str) #this moves into new state defined by event def above
-    txt = "Now in State: %s", fsm.current
-    print(txt)
+    print(f"Exiting state: {past_state}, Entering State: {fsm.current}")
     #TODO - beep and update screen display
     await robot.say_text("BEEP").wait_for_completed()
     # i = Image.new('RGBA', base.size, (255,255,255,0))

@@ -78,13 +78,15 @@ async def run(robot: cozmo.robot.Robot):
         while True:
             event = await robot.world.wait_for(cozmo.camera.EvtNewRawCameraImage, timeout=30)  # get camera image
 
-            # i = Image.new('RGBA', (cozmo.oled_face.SCREEN_WIDTH, cozmo.oled_face.SCREEN_HALF_HEIGHT), (0,0,0,0))
-            # d = ImageDraw.Draw(i)
+            i = Image.new('RGBA', (cozmo.oled_face.SCREEN_WIDTH, cozmo.oled_face.SCREEN_HEIGHT), (0,0,0,0))
+            d = ImageDraw.Draw(i)
             # draw text, full opacity
-            # d.text((10,60), fsm.current, fill=(255,255,255,255))
+            d.text((10,60), fsm.current, fill=(255,255,255,255))
 
-            # image_data = cozmo.oled_face.convert_image_to_screen_data(i)
-            # await robot.display_oled_face_image(image_data, duration_ms=10000, in_parallel=True).wait_for_completed()
+            image_data = cozmo.oled_face.convert_image_to_screen_data(i)
+            action = robot.display_oled_face_image(image_data, in_parallel=True)
+
+            action.wait_for_completed()
 
             if event.image is not None:
                 image = cv2.cvtColor(np.asarray(event.image), cv2.COLOR_BGR2RGB)
