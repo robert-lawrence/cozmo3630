@@ -68,7 +68,7 @@ async def go_to_ar_cube(robot: cozmo.robot.Robot, fsm):
         print("robot vals : x-val: %s, y-val: %s", robot.pose.position.x, robot.pose.position.y)
         print("cube vals : x-val: %d, y-val: %d", cube_x, cube_y)
         await robot.go_to_pose(Pose(pose_x, pose_y, 0,
-                              angle_z=cube.pose.rotation.angle_z), relative_to_robot=True).wait_for_completed()
+                              angle_z=cube.pose.rotation.angle_z), relative_to_robot=False).wait_for_completed()
         # print(robot.pose)
         if robot.pose.position.x - cube_x < -60 or robot.pose.position.x - cube_x > 60:
             # fsm.lost_cube()
