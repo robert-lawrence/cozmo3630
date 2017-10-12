@@ -32,18 +32,20 @@ async def go_to_ar_cube(robot: cozmo.robot.Robot, fsm):
     '''The core of the go to object test program'''
 
     # look around and try to find a cube
-    look_around = robot.start_behavior(cozmo.behavior.BehaviorTypes.LookAroundInPlace)
+    # look_around = robot.start_behavior(cozmo.behavior.BehaviorTypes.LookAroundInPlace)
 
     cube = None
 
-    try:
-        cube = await robot.world.wait_for_observed_light_cube()
-        # print("Found cube: %s" % cube)
-    except asyncio.TimeoutError:
-        print("Didn't find a cube")
-    finally:
-        look_around.stop()
-        fsm.found_cube()
+    while cube is None:
+        robot.drive_wheels(-1, 1)
+        try:
+            cube = await robot.world.wait_for_observed_light_cube()
+            # print("Found cube: %s" % cube)
+        except asyncio.TimeoutError:
+            print("Didn't find a cube")
+        finally:
+            robot.stop_all_motors()
+            fsm.found_cube()
     if cube:
         # Drive to 70mm away from the cube (much closer and Cozmo
         # will likely hit the cube) and then stop.
