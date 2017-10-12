@@ -38,12 +38,12 @@ async def go_to_ar_cube(robot: cozmo.robot.Robot, fsm):
 
     try:
         cube = await robot.world.wait_for_observed_light_cube()
-        print("Found cube: %s" % cube)
+        # print("Found cube: %s" % cube)
     except asyncio.TimeoutError:
         print("Didn't find a cube")
     finally:
         look_around.stop()
-
+        fsm.found_cube()
     if cube:
         # Drive to 70mm away from the cube (much closer and Cozmo
         # will likely hit the cube) and then stop.
@@ -68,13 +68,16 @@ async def go_to_ar_cube(robot: cozmo.robot.Robot, fsm):
         print("cube vals : x-val: %d, y-val: %d", cube_x, cube_y)
         await robot.go_to_pose(Pose(pose_x, pose_y, 0,
                               angle_z=cube.pose.rotation.angle_z), relative_to_robot=True).wait_for_completed()
-        # print("Completed action: result = %s" % action)
-        # fsm.at_cube()
-        # robot.say_text("Now at cube, moving to search for colored cube!")
-        print("Done.")
-        print(robot.pose)
+        # print(robot.pose)
         if robot.pose.position.x - cube_x < -60 or robot.pose.position.x - cube_x > 60:
+            # fsm.lost_cube()
+            await fsmlib.trigger(fsm, "lost_cube", robot)
+            # robot.say_text("Lost Cube")
             await go_to_ar_cube(robot, fsm)
         if robot.pose.position.y - cube_y < -60 or robot.pose.position.y - cube_y > 60:
+            # fsm.lost_cube()
+            await fsmlib.trigger(fsm, "lost_cube", robot)
+            # robot.say_text("Lost Cube")
             await go_to_ar_cube(robot, fsm)
-        fsmlib.trigger(fsm, "found_cube", robot)
+        # robot.say_text("At the cube")
+        await fsmlib.trigger(fsm, "at_cube", robot)

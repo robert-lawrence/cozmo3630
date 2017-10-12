@@ -87,6 +87,7 @@ async def run(robot: cozmo.robot.Robot):
                 if fsm.current == 'search_for_AR_cube':
                     # robot.say_text("Searching for AR cube!")
                     await go_to_ar_cube(robot, fsm)
+                    await fsmlib.trigger(fsm, "switch_to_color", robot)
 
 
                 elif fsm.current == 'go_to_colored_cube':
