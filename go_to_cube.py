@@ -121,23 +121,13 @@ async def run(robot: cozmo.robot.Robot):
                     if outliers >= 3:
                         continue
 
-                    if (avg_size > 100):
-                        if (avg_x > 40 or avg_x < -40):
-                            await robot.turn_in_place(degrees(10 * (-1 if avg_x > 0 else 1))).wait_for_completed()
-                            continue
-                        if (avg_size < 120):
-                            dist = 50 if avg_size < 80 else 20
-                            await robot.drive_straight(distance_mm(20), speed_mmps(40), False, False,
-                                                       0).wait_for_completed()
-                    else:
-                        l_speed = 20
-                        r_speed = 20
-                        if (avg_x > 40):
-                            l_speed += 10
-                        if (avg_x < -40):
-                            r_speed += 10
-                        robot.drive_wheels(l_speed,r_speed)
-
+                    if (avg_x > 40 or avg_x < -40):
+                        await robot.turn_in_place(degrees(10 * (-1 if avg_x > 0 else 1))).wait_for_completed()
+                        continue
+                    if (avg_size < 120):
+                        dist = 50 if avg_size < 80 else 20
+                        await robot.drive_straight(distance_mm(20), speed_mmps(40), False, False,
+                                                   0).wait_for_completed()
 
                 elif fsm.current == "at_colored_cube":
                     continue
