@@ -24,10 +24,10 @@ import asyncio
 
 import cozmo
 from cozmo.util import degrees, distance_mm, Pose
-from fysom import *
+from fsmlib import *
 
 
-def go_to_ar_cube(robot: cozmo.robot.Robot):
+def go_to_ar_cube(robot: cozmo.robot.Robot, fsm):
     '''The core of the go to object test program'''
 
     # look around and try to find a cube

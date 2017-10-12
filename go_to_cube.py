@@ -9,7 +9,7 @@ from cozmo.util import distance_mm, speed_mmps, radians, degrees
 import time
 import os
 from glob import glob
-from fysom import *
+from fsmlib import *
 
 from find_cube import *
 from go_to_ar_cube import *
@@ -68,16 +68,7 @@ async def run(robot: cozmo.robot.Robot):
 
     gain, exposure, mode = 390, 3, 1
 
-    fsm = Fysom({
-        'initial': 'search_for_AR_cube',
-        'events': [
-            {'name': 'found_cube', 'src': 'search_for_AR_cube', 'dst': 'go_to_cube'},
-            {'name': 'at_cube', 'src': 'go_to_cube', 'dst': 'reached_cube'},
-            {'name': 'switch_to_color', 'src': 'reached_cube', 'dst': 'go_to_colored_cube'},
-            {'name': 'found_colored_cube', 'src': 'go_to_colored_cube', 'dst': 'at_colored_cube'},
-            {'name': 'cube_moved', 'src': 'at_colored_cube', 'dst': 'go_to_colored_cube'}
-        ]
-    })
+fsm = fsm.init_fsm()
 
     try:
         positions = []
@@ -95,7 +86,7 @@ async def run(robot: cozmo.robot.Robot):
 
                 if fsm.current == 'search_for_AR_cube':
                     # robot.say_text("Searching for AR cube!")
-                    go_to_ar_cube(robot)
+                    go_to_ar_cube(robot, fsm)
 
 
                 elif fsm.current == 'go_to_colored_cube':
