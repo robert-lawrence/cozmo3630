@@ -57,7 +57,7 @@ async def run(robot: cozmo.robot.Robot):
 
     # Move lift down and tilt the head up
     robot.move_lift(-3)
-    await robot.set_head_angle(degrees(0)).wait_for_completed()
+    await robot.set_head_angle(degrees(-10)).wait_for_completed()
 
     robot.world.image_annotator.annotation_enabled = False
     robot.world.image_annotator.add_annotator('box', BoxAnnotator)
@@ -76,6 +76,15 @@ async def run(robot: cozmo.robot.Robot):
 
         while True:
             event = await robot.world.wait_for(cozmo.camera.EvtNewRawCameraImage, timeout=30)  # get camera image
+
+            i = Image.new('RGBA', (cozmo.oled_face.SCREEN_WIDTH, cozmo.oled_face.SCREEN_HALF_HEIGHT), (0,0,0,0))
+            d = ImageDraw.Draw(i)
+            # draw text, full opacity
+            d.text((10,60), fsm.current, fill=(255,255,255,255))
+
+            image_data = cozmo.oled_face.convert_image_to_screen_data(i)
+            await robot.display_oled_face_image(image_data, duration_ms=10000, in_parallel=True).wait_for_completed()
+
             if event.image is not None:
                 image = cv2.cvtColor(np.asarray(event.image), cv2.COLOR_BGR2RGB)
 
@@ -122,13 +131,23 @@ async def run(robot: cozmo.robot.Robot):
                     if outliers >= 3:
                         continue
 
-                    if (avg_x > 40 or avg_x < -40):
-                        await robot.turn_in_place(degrees(10 * (-1 if avg_x > 0 else 1))).wait_for_completed()
-                        continue
-                    if (avg_size < 120):
-                        dist = 50 if avg_size < 80 else 20
-                        await robot.drive_straight(distance_mm(20), speed_mmps(40), False, False,
-                                                   0).wait_for_completed()
+                    if (avg_size > 100):
+                        if (avg_x > 40 or avg_x < -40):
+                            await robot.turn_in_place(degrees(10 * (-1 if avg_x > 0 else 1))).wait_for_completed()
+                            continue
+                        if (avg_size < 120):
+                            dist = 50 if avg_size < 80 else 20
+                            await robot.drive_straight(distance_mm(20), speed_mmps(40), False, False,
+                                                       0).wait_for_completed()
+                    else:
+                        l_speed = 20
+                        r_speed = 20
+                        if (avg_x > 40):
+                            l_speed += 10
+                        if (avg_x < -40):
+                            r_speed += 10
+                        robot.drive_wheels(l_speed,r_speed)
+
 
                 elif fsm.current == "at_colored_cube":
                     continue
