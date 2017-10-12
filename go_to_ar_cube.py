@@ -73,5 +73,6 @@ def go_to_ar_cube(robot: cozmo.robot.Robot, fsm):
         print("Done.")
         print(robot.pose)
 
+        fsmlib.trigger(fsm, "found_cube", robot)
 
 cozmo.run_program(go_to_ar_cube)

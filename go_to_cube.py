@@ -129,6 +129,8 @@ fsm = fsm.init_fsm()
                         await robot.drive_straight(distance_mm(20), speed_mmps(40), False, False,
                                                    0).wait_for_completed()
 
+                elif fsm.current == "at_colored_cube":
+                    continue
 
 
     except KeyboardInterrupt:
