@@ -49,15 +49,29 @@ def go_to_ar_cube(robot: cozmo.robot.Robot):
         # print(cube.pose)
         # fsm.found_cube()
         # robot.say_text("Found cube, going to cube!")
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
-        print("robot vals : x-val: %d, y-val: %d", robot.pose.position.x, robot.pose.position.y)
-        print("cube vals : x-val: %d, y-val: %d", cube.pose.position.x, cube.pose.position.y)
-        robot.go_to_pose(Pose(cube.pose.position.x - robot.pose.position.x, cube.pose.position.y - robot.pose.position.y, 0,
+        cube_x = cube.pose.position.x
+        cube_y = cube.pose.position.y
+        cube_angle = cube.pose.rotation.angle_z.degrees
+        pose_x = cube_x
+        pose_y = cube_y
+        pose_x += (-60 + (abs(cube_angle) / 1.5))
+        if cube_angle < -90:
+            pose_y += ((abs(abs(cube_angle) - 180)) / 1.5)
+        elif cube_angle < 0:
+            pose_y += ((abs(cube_angle)) / 1.5)
+        elif cube_angle > 90:
+            pose_y -= ((abs(abs(cube_angle) - 180)) / 1.5)
+        else:
+            pose_y -= cube_angle / 1.5
+        print("robot vals : x-val: %s, y-val: %s", robot.pose.position.x, robot.pose.position.y)
+        print("cube vals : x-val: %d, y-val: %d", cube_x, cube_y)
+        robot.go_to_pose(Pose(pose_x, pose_y, 0,
                               angle_z=cube.pose.rotation.angle_z), relative_to_robot=True).wait_for_completed()
         # print("Completed action: result = %s" % action)
         # fsm.at_cube()
         # robot.say_text("Now at cube, moving to search for colored cube!")
         print("Done.")
+        print(robot.pose)
 
 
 cozmo.run_program(go_to_ar_cube)
