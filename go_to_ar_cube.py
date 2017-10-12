@@ -35,17 +35,16 @@ async def go_to_ar_cube(robot: cozmo.robot.Robot, fsm):
     # look_around = robot.start_behavior(cozmo.behavior.BehaviorTypes.LookAroundInPlace)
 
     cube = None
-
+    #loop = asyncio.get_event_loop()
+    #loop.run_until_complete(robot.drive_wheels(-0.1,0.1,duration=5))
+    print("driving wheels")
+    robot.drive_wheel_motors(-15,15)
+    print("wheels driven")
     while cube is None:
-        robot.drive_wheels(-1, 1)
-        try:
             cube = await robot.world.wait_for_observed_light_cube()
-            # print("Found cube: %s" % cube)
-        except asyncio.TimeoutError:
-            print("Didn't find a cube")
-        finally:
-            robot.stop_all_motors()
-            fsm.found_cube()
+    robot.stop_all_motors()
+    fsm.found_cube()
+
     if cube:
         # Drive to 70mm away from the cube (much closer and Cozmo
         # will likely hit the cube) and then stop.
