@@ -72,18 +72,19 @@ async def run(robot: cozmo.robot.Robot):
 
     try:
         positions = []
+        last_angle = 0
         nones = 0
 
         while True:
             event = await robot.world.wait_for(cozmo.camera.EvtNewRawCameraImage, timeout=30)  # get camera image
 
-            i = Image.new('RGBA', (cozmo.oled_face.SCREEN_WIDTH, cozmo.oled_face.SCREEN_HALF_HEIGHT), (0,0,0,0))
-            d = ImageDraw.Draw(i)
+            # i = Image.new('RGBA', (cozmo.oled_face.SCREEN_WIDTH, cozmo.oled_face.SCREEN_HALF_HEIGHT), (0,0,0,0))
+            # d = ImageDraw.Draw(i)
             # draw text, full opacity
-            d.text((10,60), fsm.current, fill=(255,255,255,255))
+            # d.text((10,60), fsm.current, fill=(255,255,255,255))
 
-            image_data = cozmo.oled_face.convert_image_to_screen_data(i)
-            await robot.display_oled_face_image(image_data, duration_ms=10000, in_parallel=True).wait_for_completed()
+            # image_data = cozmo.oled_face.convert_image_to_screen_data(i)
+            # await robot.display_oled_face_image(image_data, duration_ms=10000, in_parallel=True).wait_for_completed()
 
             if event.image is not None:
                 image = cv2.cvtColor(np.asarray(event.image), cv2.COLOR_BGR2RGB)
@@ -113,10 +114,13 @@ async def run(robot: cozmo.robot.Robot):
                         nones = nones + 1
                         if nones > 7:
                             nones = 0
-                            await robot.turn_in_place(degrees(40)).wait_for_completed()
+                            robot.stop_all_motors()
+                            direction = -1 if last_angle > 0 else 1 
+                            await robot.turn_in_place(degrees(40*direction)).wait_for_completed()
                         continue
                     nones = 0
                     angle = cube[0] - 160
+                    last_angle = angle
                     positions.append((angle, cube[2]))
                     if len(positions) > 10:
                         positions.pop(0)
@@ -127,26 +131,31 @@ async def run(robot: cozmo.robot.Robot):
                     avg_size = sum(x[1] for x in positions) / float(len(positions))
                     outliers = sum(0 if abs(x[0] - avg_x) < 20 and abs(x[1] - avg_size) < 20 else 1 for x in positions)
                     print(avg_x, avg_size)
-                    positions = []
                     if outliers >= 3:
                         continue
 
                     if (avg_size > 100):
+                        robot.stop_all_motors()
                         if (avg_x > 40 or avg_x < -40):
                             await robot.turn_in_place(degrees(10 * (-1 if avg_x > 0 else 1))).wait_for_completed()
+                            positions = []
                             continue
                         if (avg_size < 120):
                             dist = 50 if avg_size < 80 else 20
                             await robot.drive_straight(distance_mm(20), speed_mmps(40), False, False,
                                                        0).wait_for_completed()
+                            positions = []
+                            continue
                     else:
+                        print("driving wheels")
                         l_speed = 20
                         r_speed = 20
-                        if (avg_x > 40):
-                            l_speed += 10
-                        if (avg_x < -40):
-                            r_speed += 10
-                        robot.drive_wheels(l_speed,r_speed)
+                        if (positions[-1][0] > 40):
+                            l_speed += 20
+                        if (positions[-1][0] < -40):
+                            r_speed += 20
+                        robot.drive_wheel_motors(l_speed,r_speed)
+                        await asyncio.sleep(0.1)
 
 
                 elif fsm.current == "at_colored_cube":
