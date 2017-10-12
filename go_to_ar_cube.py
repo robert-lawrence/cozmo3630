@@ -24,10 +24,11 @@ import asyncio
 
 import cozmo
 from cozmo.util import degrees, distance_mm, Pose
-from fsmlib import *
+
+import fsmlib
 
 
-def go_to_ar_cube(robot: cozmo.robot.Robot, fsm):
+async def go_to_ar_cube(robot: cozmo.robot.Robot, fsm):
     '''The core of the go to object test program'''
 
     # look around and try to find a cube
@@ -36,7 +37,7 @@ def go_to_ar_cube(robot: cozmo.robot.Robot, fsm):
     cube = None
 
     try:
-        cube = robot.world.wait_for_observed_light_cube(timeout=30)
+        cube = await robot.world.wait_for_observed_light_cube()
         print("Found cube: %s" % cube)
     except asyncio.TimeoutError:
         print("Didn't find a cube")
@@ -52,8 +53,8 @@ def go_to_ar_cube(robot: cozmo.robot.Robot, fsm):
         cube_x = cube.pose.position.x
         cube_y = cube.pose.position.y
         cube_angle = cube.pose.rotation.angle_z.degrees
-        pose_x = cube_x
-        pose_y = cube_y
+        pose_x = cube_x - robot.pose.position.x
+        pose_y = cube_y - robot.pose.position.y
         pose_x += (-60 + (abs(cube_angle) / 1.5))
         if cube_angle < -90:
             pose_y += ((abs(abs(cube_angle) - 180)) / 1.5)
@@ -65,14 +66,15 @@ def go_to_ar_cube(robot: cozmo.robot.Robot, fsm):
             pose_y -= cube_angle / 1.5
         print("robot vals : x-val: %s, y-val: %s", robot.pose.position.x, robot.pose.position.y)
         print("cube vals : x-val: %d, y-val: %d", cube_x, cube_y)
-        robot.go_to_pose(Pose(pose_x, pose_y, 0,
+        await robot.go_to_pose(Pose(pose_x, pose_y, 0,
                               angle_z=cube.pose.rotation.angle_z), relative_to_robot=True).wait_for_completed()
         # print("Completed action: result = %s" % action)
         # fsm.at_cube()
         # robot.say_text("Now at cube, moving to search for colored cube!")
         print("Done.")
         print(robot.pose)
-
+        if robot.pose.position.x - cube_x < -60 or robot.pose.position.x - cube_x > 60:
+            await go_to_ar_cube(robot, fsm)
+        if robot.pose.position.y - cube_y < -60 or robot.pose.position.y - cube_y > 60:
+            await go_to_ar_cube(robot, fsm)
         fsmlib.trigger(fsm, "found_cube", robot)
-
-cozmo.run_program(go_to_ar_cube)

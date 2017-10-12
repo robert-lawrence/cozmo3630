@@ -20,15 +20,15 @@ def trigger(fsm, event_str, robot):
     if not fsm.can(event_str):
         return # throw error?
     fsm.trigger(event_str) #this moves into new state defined by event def above
-    txt = "Now in State"+fsm.current()
+    txt = "Now in State: %s", fsm.current
     print(txt)
     #TODO - beep and update screen display
     robot.say_text("BEEP")
-    i = Image.new('RGBA', base.size, (255,255,255,0))
+    # i = Image.new('RGBA', base.size, (255,255,255,0))
     # get a font
-    fnt = ImageFont.truetype('Pillow/Tests/fonts/FreeMono.ttf', 40)
+    # fnt = ImageFont.truetype('Pillow/Tests/fonts/FreeMono.ttf', 40)
     # get a drawing context
-    d = ImageDraw.Draw(i)
+    # d = ImageDraw.Draw(i)
     # draw text, full opacity
-    d.text((10,60), fsm.current, font=fnt, fill=(255,255,255,255))
+    # d.text((10,60), fsm.current, font=fnt, fill=(255,255,255,255))
 

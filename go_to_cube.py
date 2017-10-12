@@ -57,7 +57,7 @@ async def run(robot: cozmo.robot.Robot):
 
     # Move lift down and tilt the head up
     robot.move_lift(-3)
-    robot.set_head_angle(degrees(0)).wait_for_completed()
+    await robot.set_head_angle(degrees(0)).wait_for_completed()
 
     robot.world.image_annotator.annotation_enabled = False
     robot.world.image_annotator.add_annotator('box', BoxAnnotator)
@@ -68,7 +68,7 @@ async def run(robot: cozmo.robot.Robot):
 
     gain, exposure, mode = 390, 3, 1
 
-fsm = fsm.init_fsm()
+    fsm = fsmlib.init_fsm()
 
     try:
         positions = []
@@ -86,7 +86,7 @@ fsm = fsm.init_fsm()
 
                 if fsm.current == 'search_for_AR_cube':
                     # robot.say_text("Searching for AR cube!")
-                    go_to_ar_cube(robot, fsm)
+                    await go_to_ar_cube(robot, fsm)
 
 
                 elif fsm.current == 'go_to_colored_cube':
