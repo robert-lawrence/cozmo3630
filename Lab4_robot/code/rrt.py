@@ -132,14 +132,15 @@ async def CozmoPlanning(robot: cozmo.robot.Robot):
     cmap.add_goal(target_cube_node)
     RRT(cmap, cmap.get_start())
 
-    # if cmap.is_solved:
-    #     path_found = []
-    #     for goal in cmap._goals:
-    #         cur = goal
-    #         path_found = [cur] + path_found
-    #         while cur.parent is not None:
-    #             path_found = [cur.parent] + path_found
-    #     print(path_found)
+    if cmap.is_solved:
+        path_found = []
+        for goal in cmap._goals:
+            cur = goal
+            path_found = [cur] + path_found
+            while cur.parent is not None:
+                path_found = [cur.parent] + path_found
+                cur = cur.parent
+        print(path_found)
     
 
 ################################################################################
