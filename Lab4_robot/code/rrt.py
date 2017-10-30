@@ -1,6 +1,7 @@
 import cozmo
 
 import numpy as np
+from cozmo.objects import LightCube
 
 from cozmo.util import degrees, distance_mm, speed_mmps, radians
 
@@ -96,7 +97,7 @@ async def go_to_center(robot: cozmo.robot.Robot):
     angle = np.arctan2(center_node.y - start_node.y, center_node.x - start_node.x)
     await robot.turn_in_place(radians(angle)).wait_for_completed()
     # sleep(3.0)
-    await robot.drive_straight(distance_mm(get_dist(center_node, start_node)), speed_mmps(25)).wait_for_completed()
+    await robot.drive_straight(distance_mm(get_dist(center_node, start_node)), speed_mmps(50)).wait_for_completed()
 
     target_cube = None
     robot.drive_wheel_motors(-15, 15)
@@ -123,10 +124,13 @@ async def CozmoPlanning(robot: cozmo.robot.Robot):
         except:
             target_cube = await go_to_center(robot)
 
-    target_cube_node = Node((target_cube.pose.position.x, target_cube.pose.position.y))
-    path_found = await get_updated_path(cmap, robot, target_cube_node)
-    print(robot.pose.position.x, robot.pose.position.y, robot.pose_angle)
-    print(target_cube.pose.position.x, target_cube.pose.position.y)
+    # target_cube_node = Node((target_cube.pose.position.x, target_cube.pose.position.y))
+    # await robot.go_to_pose(target_cube.pose).wait_for_completed()
+    path_found = await get_updated_path(cmap, robot, target_cube)
+    print("Robot Position:")
+    print(robot.pose.position.x, robot.pose.position.y, robot.pose_angle.degrees)
+    print("Target Cube Position:")
+    print(target_cube.pose.position.x, target_cube.pose.position.y, target_cube.pose)
     for node in path_found:
         print("Node:")
         robot_node = Node((robot.pose.position.x, robot.pose.position.y))
@@ -140,21 +144,24 @@ async def CozmoPlanning(robot: cozmo.robot.Robot):
 
 
 async def get_updated_path(cmap, robot, target_cube):
-    cube_angle = target_cube.pose_angle.radians
+    cube_angle_rad = target_cube.pose.rotation.angle_z.radians
+    cube_angle_degs = target_cube.pose.rotation.angle_z.degrees
+    # print("CUBE ANGLE:")
+    # print(cube_angle)
     cube_pos = target_cube.pose.position
-    diag1 = math.radians(45) + cube_angle
-    diag2 = -1*math.radians(45) + cube_angle
-    goal = Node(( cube_pos.x + 100*math.cos(cube_angle), cube_pos.y + 100*math.sin(cube_angle) ))
+    diag1 = math.radians(45) + cube_angle_degs
+    diag2 = -1*math.radians(45) + cube_angle_degs
+    goal = Node(( cube_pos.x + 50*math.cos(cube_angle_rad), cube_pos.y + 50*math.sin(cube_angle_rad)))
 
-    cube_obstacle = [ Node(cube_pos.x + 25*math.cos(diag1), cube_pos.y + 25*math.sin(diag1)),
-            Node(cube_pos.x - 25*math.cos(diag1), cube_pos.y - 25*math.sin(diag1)),
-            Node(cube_pos.x + 25*math.cos(diag2), cube_pos.y + 25*math.sin(diag2)),
-            Node(cube_pos.x - 25*math.cos(diag2), cube_pos.y - 25*math.sin(diag2)) ]
+    cube_obstacle = [ Node((cube_pos.x + 50*math.cos(diag1), cube_pos.y + 50*math.sin(diag1))),
+            Node((cube_pos.x + 50 * math.cos(diag2), cube_pos.y + 50 * math.sin(diag2))),
+            Node((cube_pos.x - 50*math.cos(diag1), cube_pos.y - 50*math.sin(diag1))),
+            Node((cube_pos.x - 50*math.cos(diag2), cube_pos.y - 50*math.sin(diag2))) ]
     cmap.add_obstacle(cube_obstacle)
 
     robot_start = Node((robot.pose.position.x, robot.pose.position.y))
     cmap.set_start(robot_start)
-    cmap.add_goal(target_cube_node)
+    cmap.add_goal(goal)
     RRT(cmap, cmap.get_start())
     path_found = []
     if cmap.is_solved:
