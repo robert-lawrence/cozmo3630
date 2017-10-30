@@ -96,7 +96,7 @@ async def go_to_center(robot: cozmo.robot.Robot):
     angle = np.arctan2(center_node.y - start_node.y, center_node.x - start_node.x)
     await robot.turn_in_place(radians(angle)).wait_for_completed()
     # sleep(3.0)
-    await robot.drive_straight(distance_mm(get_dist(center_node, start_node)), speed_mmps(50)).wait_for_completed()
+    await robot.drive_straight(distance_mm(get_dist(center_node, start_node)), speed_mmps(25)).wait_for_completed()
 
     target_cube = None
     robot.drive_wheel_motors(-15, 15)
@@ -128,10 +128,12 @@ async def CozmoPlanning(robot: cozmo.robot.Robot):
     print(robot.pose.position.x, robot.pose.position.y, robot.pose_angle)
     print(target_cube.pose.position.x, target_cube.pose.position.y)
     for node in path_found:
+        print("Node:")
         robot_node = Node((robot.pose.position.x, robot.pose.position.y))
+        print(node.x, node.y)
         # Todo figure out how to turn to the correct angle
-        angle = robot.pose_angle.radians - (np.arctan2(node.y - robot_node.y, node.x - robot_node.x))
-        print(angle)
+        angle = (np.arctan2(node.y - robot_node.y, node.x - robot_node.x)) - robot.pose_angle.radians
+        # print(angle)
         await robot.turn_in_place(radians(angle)).wait_for_completed()
         await robot.drive_straight(distance_mm(get_dist(node, robot_node)), speed_mmps(50)).wait_for_completed()
 
@@ -150,7 +152,7 @@ async def get_updated_path(cmap, robot, target_cube_node):
             while cur.parent is not None:
                 path_found = [cur.parent] + path_found
                 cur = cur.parent
-        print(path_found)
+        # print(path_found)
     return path_found
 
 
