@@ -92,10 +92,8 @@ def RRT(cmap, start):
 async def go_to_center(robot: cozmo.robot.Robot):
     start_node = Node((100, 75))
     grid_width, grid_height = cmap.get_size()
-    print(grid_width, grid_height)
     center_node = Node((grid_width / 2, grid_height / 2))
     angle = np.arctan2(center_node.y - start_node.y, center_node.x - start_node.x)
-    print(angle)
     await robot.turn_in_place(radians(angle)).wait_for_completed()
     # sleep(3.0)
     await robot.drive_straight(distance_mm(get_dist(center_node, start_node)), speed_mmps(50)).wait_for_completed()
@@ -118,22 +116,34 @@ async def CozmoPlanning(robot: cozmo.robot.Robot):
     # TODO: please enter your code below.
     # Description of function provided in instructions
 
-    # robot.drive_wheel_motors(-15, 15)
-
     target_cube = None
     while target_cube is None:
         try:
             target_cube = await robot.world.wait_for_observed_light_cube(timeout=2.0)
         except:
             target_cube = await go_to_center(robot)
-    robot_start = Node((robot.pose.position.x, robot.pose.position.y))
+
     target_cube_node = Node((target_cube.pose.position.x, target_cube.pose.position.y))
+    path_found = await get_updated_path(cmap, robot, target_cube_node)
+    print(robot.pose.position.x, robot.pose.position.y, robot.pose_angle)
+    print(target_cube.pose.position.x, target_cube.pose.position.y)
+    for node in path_found:
+        robot_node = Node((robot.pose.position.x, robot.pose.position.y))
+        # Todo figure out how to turn to the correct angle
+        angle = robot.pose_angle.radians - (np.arctan2(node.y - robot_node.y, node.x - robot_node.x))
+        print(angle)
+        await robot.turn_in_place(radians(angle)).wait_for_completed()
+        await robot.drive_straight(distance_mm(get_dist(node, robot_node)), speed_mmps(50)).wait_for_completed()
+
+
+
+async def get_updated_path(cmap, robot, target_cube_node):
+    robot_start = Node((robot.pose.position.x, robot.pose.position.y))
     cmap.set_start(robot_start)
     cmap.add_goal(target_cube_node)
     RRT(cmap, cmap.get_start())
-
+    path_found = []
     if cmap.is_solved:
-        path_found = []
         for goal in cmap._goals:
             cur = goal
             path_found = [cur] + path_found
@@ -141,7 +151,8 @@ async def CozmoPlanning(robot: cozmo.robot.Robot):
                 path_found = [cur.parent] + path_found
                 cur = cur.parent
         print(path_found)
-    
+    return path_found
+
 
 ################################################################################
 #                     DO NOT MODIFY CODE BELOW                                 #
