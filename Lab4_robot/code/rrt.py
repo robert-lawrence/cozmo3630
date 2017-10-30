@@ -139,7 +139,19 @@ async def CozmoPlanning(robot: cozmo.robot.Robot):
 
 
 
-async def get_updated_path(cmap, robot, target_cube_node):
+async def get_updated_path(cmap, robot, target_cube):
+    cube_angle = target_cube.pose_angle.radians
+    cube_pos = target_cube.pose.position
+    diag1 = math.radians(45) + cube_angle
+    diag2 = -1*math.radians(45) + cube_angle
+    goal = Node(( cube_pos.x + 100*math.cos(cube_angle), cube_pos.y + 100*math.sin(cube_angle) ))
+
+    cube_obstacle = [ Node(cube_pos.x + 25*math.cos(diag1), cube_pos.y + 25*math.sin(diag1)),
+            Node(cube_pos.x - 25*math.cos(diag1), cube_pos.y - 25*math.sin(diag1)),
+            Node(cube_pos.x + 25*math.cos(diag2), cube_pos.y + 25*math.sin(diag2)),
+            Node(cube_pos.x - 25*math.cos(diag2), cube_pos.y - 25*math.sin(diag2)) ]
+    cmap.add_obstacle(cube_obstacle)
+
     robot_start = Node((robot.pose.position.x, robot.pose.position.y))
     cmap.set_start(robot_start)
     cmap.add_goal(target_cube_node)
