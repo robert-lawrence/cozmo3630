@@ -23,6 +23,9 @@ def step_from_to(node0, node1, limit=75):
     #    limit units at most
     # 3. Hint: please consider using np.arctan2 function to get vector angle
     # 4. Note: remember always return a Node object
+    if get_dist(node0, node1) > 75.:
+        angle = np.arctan2(node1[1]-node0[1],node1[0]-node0[0])
+        return Node((node0[0] + 75*math.cos(angle), node0[1] + 75*math.sin(angle)))
     return node1
     ############################################################################
 
@@ -35,9 +38,15 @@ def node_generator(cmap):
     # 2. Use CozMap.is_inbound and CozMap.is_inside_obstacles to determine the
     #    legitimacy of the random node.
     # 3. Note: remember always return a Node object
-    pass
+    node = False
+    while node is False:
+        x = rand.uniform(0, cmap.width)
+        y = rand.uniform(0, cmap.height)
+        newnode = Node(tuple((x, y)))
+        if cmap.is_inbound(newnode) and not cmap.is_inside_obstacles(newnode):
+            node = newnode
     ############################################################################
-    return rand_node
+    return node
 
 
 def RRT(cmap, start):
@@ -54,9 +63,14 @@ def RRT(cmap, start):
         # 3. Limit the distance RRT can move
         # 4. Add one path from nearest node to random node
         #
-        rand_node = None
+        rand_node = cmap.get_random_valid_node()
         nearest_node = None
-        pass
+        for node in cmap.get_nodes():
+            if nearest_node is None:
+                nearest_node = node
+            elif get_dist(rand_node,node) < get_dist(rand_node,nearest_node):
+                nearest_node = node
+        rand_node = step_from_to(nearest_node, rand_node)
         ########################################################################
         sleep(0.01)
         cmap.add_path(nearest_node, rand_node)
