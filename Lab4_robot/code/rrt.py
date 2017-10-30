@@ -1,8 +1,15 @@
 import cozmo
 
+import numpy as np
+
+from cozmo.util import degrees, distance_mm, speed_mmps, radians
+
 from cmap import *
 from gui import *
 from utils import *
+import random as rand
+import math
+from time import sleep
 
 MAX_NODES = 20000
 
@@ -82,6 +89,23 @@ def RRT(cmap, start):
     else:
         print("Please try again :-(")
 
+async def go_to_center(robot: cozmo.robot.Robot):
+    start_node = Node((100, 75))
+    grid_width, grid_height = cmap.get_size()
+    print(grid_width, grid_height)
+    center_node = Node((grid_width / 2, grid_height / 2))
+    angle = np.arctan2(center_node.y - start_node.y, center_node.x - start_node.x)
+    print(angle)
+    await robot.turn_in_place(radians(angle)).wait_for_completed()
+    # sleep(3.0)
+    await robot.drive_straight(distance_mm(get_dist(center_node, start_node)), speed_mmps(50)).wait_for_completed()
+
+    target_cube = None
+    robot.drive_wheel_motors(-15, 15)
+    while target_cube is None:
+        target_cube = await robot.world.wait_for_observed_light_cube()
+    robot.stop_all_motors()
+    return target_cube
 
 
 
@@ -94,6 +118,28 @@ async def CozmoPlanning(robot: cozmo.robot.Robot):
     # TODO: please enter your code below.
     # Description of function provided in instructions
 
+    # robot.drive_wheel_motors(-15, 15)
+
+    target_cube = None
+    while target_cube is None:
+        try:
+            target_cube = await robot.world.wait_for_observed_light_cube(timeout=2.0)
+        except:
+            target_cube = await go_to_center(robot)
+    robot_start = Node((robot.pose.position.x, robot.pose.position.y))
+    target_cube_node = Node((target_cube.pose.position.x, target_cube.pose.position.y))
+    cmap.set_start(robot_start)
+    cmap.add_goal(target_cube_node)
+    RRT(cmap, cmap.get_start())
+
+    # if cmap.is_solved:
+    #     path_found = []
+    #     for goal in cmap._goals:
+    #         cur = goal
+    #         path_found = [cur] + path_found
+    #         while cur.parent is not None:
+    #             path_found = [cur.parent] + path_found
+    #     print(path_found)
     
 
 ################################################################################
