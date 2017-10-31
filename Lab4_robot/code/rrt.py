@@ -106,9 +106,7 @@ async def go_to_center(robot: cozmo.robot.Robot):
     robot.stop_all_motors()
     return target_cube
 
-async def cube_search():
-    found_ids = []
-    obstacles = []
+async def cube_search(obstacles=[]):
     target_cube = None
     while target_cube is None:
         try:
@@ -117,12 +115,17 @@ async def cube_search():
             cube = await go_to_center(robot)
         if cube.cube_id is 2:
             target_cube = cube
-        elif cube.cube_id not in found_ids:
+        elif cube not in obstacles:
             obstacles.append(cube)
-            found_ids.append(cube.cube_id)
     return target_cube, obstacles
 
-
+async def new_cube_search(obstacles,target_cube):
+    try:
+        cube = await robot.world.wait_for_observed_light_cube(timeout=1.0)
+    if cube in obtacles or cube == target_cube:
+        return None
+    else:
+        return cube
 
 
 async def CozmoPlanning(robot: cozmo.robot.Robot):
@@ -147,7 +150,15 @@ async def CozmoPlanning(robot: cozmo.robot.Robot):
     print(robot.pose.position.x, robot.pose.position.y, robot.pose_angle.degrees)
     print("Target Cube Position:")
     print(target_cube.pose.position.x, target_cube.pose.position.y, target_cube.pose)
-    for node in path_found:
+    obstacles = []
+    while len(path_found) > 0:
+        new_cube = new_cube_search(obstacles,target_cube)
+        if new_cube not None:
+            #recalculate RRT
+            add_obstacle_cube(new_cube)
+            path_found = get_updated_path(cmap,robot,target_cube)
+
+        node = path_found.pop(0)
         print("Node:")
         robot_node = Node((robot.pose.position.x, robot.pose.position.y))
         print(node.x, node.y)
