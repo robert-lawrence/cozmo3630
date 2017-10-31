@@ -106,6 +106,23 @@ async def go_to_center(robot: cozmo.robot.Robot):
     robot.stop_all_motors()
     return target_cube
 
+async def cube_search():
+    found_ids = []
+    obstacles = []
+    target_cube = None
+    while target_cube is None:
+        try:
+            cube = await robot.world.wait_for_observed_light_cube(timeout=2.0)
+        except:
+            cube = await go_to_center(robot)
+        if cube.cube_id is 2:
+            target_cube = cube
+        elif cube.cube_id not in found_ids:
+            obstacles.append(cube)
+            found_ids.append(cube.cube_id)
+    return target_cube, obstacles
+
+
 
 
 async def CozmoPlanning(robot: cozmo.robot.Robot):
@@ -117,12 +134,11 @@ async def CozmoPlanning(robot: cozmo.robot.Robot):
     # TODO: please enter your code below.
     # Description of function provided in instructions
 
-    target_cube = None
-    while target_cube is None:
-        try:
-            target_cube = await robot.world.wait_for_observed_light_cube(timeout=2.0)
-        except:
-            target_cube = await go_to_center(robot)
+    target_cube, obstacles = cube_search()
+
+    for obstacle in obstacles:
+        add_obstacle_cube(obstacle)
+
 
     # target_cube_node = Node((target_cube.pose.position.x, target_cube.pose.position.y))
     # await robot.go_to_pose(target_cube.pose).wait_for_completed()
@@ -144,24 +160,26 @@ async def CozmoPlanning(robot: cozmo.robot.Robot):
     print("Final cube angle")
     print(math.degrees(target_cube.pose.rotation.angle_z.radians))
     final_turn_ang = target_cube.pose.rotation.angle_z.radians - robot_angle - math.radians(180)
-    print(final_turn_ang)
     await robot.turn_in_place(radians(final_turn_ang)).wait_for_completed()
 
 
-
+def add_obstacle_cube(obstacle):
+    cube_angle_rad = obstacle.pose.rotation.angle_z.radians
+    cube_pos = obstacle.pose.position
+    diag1 = math.radians(45) + cube_angle_rad
+    diag2 = -1 * math.radians(45) + cube_angle_rad
+    cube_obstacle = [Node((cube_pos.x + 43 * math.cos(diag1), cube_pos.y + 43 * math.sin(diag1))),
+                     Node((cube_pos.x + 43 * math.cos(diag2), cube_pos.y + 43 * math.sin(diag2))),
+                     Node((cube_pos.x - 43 * math.cos(diag1), cube_pos.y - 43 * math.sin(diag1))),
+                     Node((cube_pos.x - 43 * math.cos(diag2), cube_pos.y - 43 * math.sin(diag2)))]
+    cmap.add_obstacle(cube_obstacle)
 
 async def get_updated_path(cmap, robot, target_cube):
     cube_angle_rad = target_cube.pose.rotation.angle_z.radians
     cube_pos = target_cube.pose.position
-    diag1 = math.radians(45) + cube_angle_rad
-    diag2 = -1*math.radians(45) + cube_angle_rad
     goal = Node((cube_pos.x + 60*math.cos(cube_angle_rad), cube_pos.y + 60*math.sin(cube_angle_rad)))
 
-    cube_obstacle = [Node((cube_pos.x + 43*math.cos(diag1), cube_pos.y + 43*math.sin(diag1))),
-            Node((cube_pos.x + 43 * math.cos(diag2), cube_pos.y + 43 * math.sin(diag2))),
-            Node((cube_pos.x - 43*math.cos(diag1), cube_pos.y - 43*math.sin(diag1))),
-            Node((cube_pos.x - 43*math.cos(diag2), cube_pos.y - 43*math.sin(diag2)))]
-    cmap.add_obstacle(cube_obstacle)
+    add_obstacle_cube(target_cube)
 
     robot_start = Node((robot.pose.position.x, robot.pose.position.y))
     cmap.set_start(robot_start)
