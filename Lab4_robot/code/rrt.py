@@ -106,15 +106,27 @@ async def go_to_center(robot: cozmo.robot.Robot):
     robot.stop_all_motors()
     return target_cube
 
-async def cube_search():
+async def cube_search(robot):
     found_ids = []
     obstacles = []
+    in_center = False
     target_cube = None
     while target_cube is None:
         try:
             cube = await robot.world.wait_for_observed_light_cube(timeout=2.0)
+            if cube in obstacles:
+                raise Exception
         except:
-            cube = await go_to_center(robot)
+            cube = None
+            if in_center:
+                robot.drive_wheel_motors(-15, 15)
+                while cube is None or cube in obstacles:
+                    cube = await robot.world.wait_for_observed_light_cube(include_existing=False)
+                    print(cube.cube_id)
+                robot.stop_all_motors()
+            else:
+                cube = await go_to_center(robot)
+                in_center = True
         if cube.cube_id is 2:
             target_cube = cube
         elif cube.cube_id not in found_ids:
@@ -134,9 +146,10 @@ async def CozmoPlanning(robot: cozmo.robot.Robot):
     # TODO: please enter your code below.
     # Description of function provided in instructions
 
-    target_cube, obstacles = cube_search()
+    target_cube, obstacles = await cube_search(robot)
 
     for obstacle in obstacles:
+        print(obstacle.cube_id)
         add_obstacle_cube(obstacle)
 
 
