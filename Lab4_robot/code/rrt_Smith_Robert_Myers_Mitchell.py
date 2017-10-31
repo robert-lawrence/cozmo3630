@@ -122,7 +122,6 @@ async def cube_search(robot):
                 robot.drive_wheel_motors(-15, 15)
                 while cube is None or cube in obstacles:
                     cube = await robot.world.wait_for_observed_light_cube(include_existing=False)
-                    print(cube.cube_id)
                 robot.stop_all_motors()
             else:
                 cube = await go_to_center(robot)
@@ -169,11 +168,12 @@ async def CozmoPlanning(robot: cozmo.robot.Robot):
     print(target_cube.pose.position.x, target_cube.pose.position.y, target_cube.pose)
     obstacles = []
     while len(path_found) > 0:
-        new_cube = new_cube_search(robot, obstacles,target_cube)
+        new_cube = await new_cube_search(robot, obstacles,target_cube)
         if new_cube is not None:
             #recalculate RRT
+            print(new_cube.cube_id)
             add_obstacle_cube(new_cube)
-            path_found = get_updated_path(cmap,robot,target_cube)
+            path_found = await get_updated_path(cmap,robot,target_cube)
 
         node = path_found.pop(0)
         print("Node:")
