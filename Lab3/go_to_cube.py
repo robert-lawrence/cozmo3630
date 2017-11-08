@@ -7,10 +7,10 @@ import cozmo
 import sys
 
 from cozmo.util import distance_mm, speed_mmps, degrees
-from Lab3 import find_cube
-from Lab3 import go_to_ar_cube
+from .find_cube import *
+from .go_to_ar_cube import *
 
-from Lab3 import fsmlib
+from .fsmlib import *
 
 try:
     from PIL import ImageDraw, ImageFont

@@ -23,7 +23,7 @@ object (e.g. a LightCube).
 import cozmo
 from cozmo.util import Pose
 
-from Lab3 import fsmlib
+from .fsmlib import *
 
 
 async def go_to_ar_cube(robot: cozmo.robot.Robot, fsm):
