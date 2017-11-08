@@ -1,0 +1,32 @@
+{
+  "example_1": {
+  "Robot_init_pose": [6,3,0],
+  "Dh_circular":10,
+  "Robot_speed": 0.5
+  },
+
+  "example_2": {
+  "Robot_init_pose": [6, 1, 0],
+  "Dh_circular": 10,
+  "Robot_speed": 0.5
+  },
+
+  "example_3": {
+  "Robot_init_pose": [5, 4, 0],
+  "Dh_circular": 20,
+  "Robot_speed": 0.3
+  },
+
+  "example_4": {
+  "Robot_init_pose": [3, 2, 0],
+  "Dh_circular": 20,
+  "Robot_speed": 0.3
+  },
+
+  "example_5": {
+  "Robot_init_pose": [9, 9, 180],
+  "Dh_circular": 15,
+  "Robot_speed": 0.5
+  }
+
+}
