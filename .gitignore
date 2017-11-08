@@ -1,0 +1,4 @@
+.idea/
+Lab4_robot/code/__pycache__/
+Lab4_sim/__pycache__/
+*.pyc
