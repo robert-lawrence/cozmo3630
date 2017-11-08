@@ -20,12 +20,10 @@ GoToObject action, that can be used to drive within a given distance of an
 object (e.g. a LightCube).
 '''
 
-import asyncio
-
 import cozmo
-from cozmo.util import degrees, distance_mm, Pose
+from cozmo.util import Pose
 
-import fsmlib
+from Lab3 import fsmlib
 
 
 async def go_to_ar_cube(robot: cozmo.robot.Robot, fsm):

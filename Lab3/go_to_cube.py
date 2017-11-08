@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
 # !c:/Python35/python3.exe -u
 import asyncio
-import sys
 import cv2
 import numpy as np
 import cozmo
-from cozmo.util import distance_mm, speed_mmps, radians, degrees
-import time
-import os
-from glob import glob
-from fsmlib import *
+import sys
 
-from find_cube import *
-from go_to_ar_cube import *
+from cozmo.util import distance_mm, speed_mmps, degrees
+from Lab3 import find_cube
+from Lab3 import go_to_ar_cube
+
+from Lab3 import fsmlib
 
 try:
     from PIL import ImageDraw, ImageFont
