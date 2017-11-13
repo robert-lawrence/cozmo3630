@@ -31,18 +31,19 @@ def motion_update(particles, odom):
                                  old_robo_h)
     trans_pred = math.sqrt(((old_robo_x - new_robo_x)**2) + ((old_robo_y - new_robo_y)**2))
     rot2_pred = diff_heading_deg(diff_heading_deg(new_robo_h, old_robo_h), rot1_pred)
-    particle_mean = compute_mean_pose(particles)
 
     if odom[0] != odom[1]:
         for particle in particles:
-            alpha1 = 1.0
-            alpha2 = 1.0
-            alpha3 = 1.0
-            alpha4 = 1.0
+            alpha1 = 0.1
+            alpha2 = 0.1
+            alpha3 = 0.1
+            alpha4 = 0.1
 
-
-
-            x, y, h = particle.xyh
+            rot1_rand = rot1_pred - add_gaussian_noise((rot1_pred * alpha1) + (trans_pred * alpha2), ODOM_HEAD_SIGMA)
+            trans_rand = trans_pred - add_gaussian_noise((trans_pred * alpha3) + alpha4 * (rot1_pred + rot2_pred),
+                                                         ODOM_TRANS_SIGMA)
+            rot2_rand = rot2_pred - add_gaussian_noise((rot2_pred * alpha1) + (trans_pred * alpha2), ODOM_HEAD_SIGMA)
+            particle.move(rot1_rand, trans_rand, rot2_rand)
 
 
 
