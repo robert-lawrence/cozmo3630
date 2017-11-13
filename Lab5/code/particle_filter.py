@@ -2,6 +2,7 @@ from .grid import *
 from .particle import Particle
 from .utils import *
 from .setting import *
+import math
 
 # ------------------------------------------------------------------------
 def motion_update(particles, odom):
@@ -71,3 +72,19 @@ def measurement_update(particles, measured_marker_list, grid):
     """
     measured_particles = []
     return measured_particles
+
+
+def get_particle_prob(marker_pairs):
+    """
+    Expected input: 
+    [ (measured marker, actual marker), (), (), ... ]
+    all markers should be in (x,y,h) format
+    """
+    prob = 1.0
+
+    for pair in marker_pairs:
+        dist = grid_distance(pair[0][0], pair[0][1], pair[1][0], pair[0][1])
+        diff_heading = diff_heading_def(pair[0][2], pair[1][2])
+        exp = -1 * ( (dist**2/(2*MARKER_TRANS_SIGMA**2)) + (diff_heading**2/(2*MARKER_ROT_SIGMA**2)) )
+        prob = prob * math.exp(exp)
+    return prob
