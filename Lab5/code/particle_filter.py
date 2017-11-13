@@ -16,6 +16,38 @@ def motion_update(particles, odom):
         Returns: the list of particle represents belief \tilde{p}(x_{t} | u_{t})
                 after motion update
     """
+
+    # Old robot odometry with added noise [x, y, h]
+    old_robo_x = odom[0][0]
+    old_robo_y = odom[0][1]
+    old_robo_h = odom[0][2]
+    
+    # New robot odometry with added noise [x, y, h]
+    new_robo_x = odom[1][0]
+    new_robo_y = odom[1][1]
+    new_robo_h = odom[1][2]
+
+    rot1_pred = diff_heading_deg(math.atan2(new_robo_y - old_robo_y, new_robo_x - old_robo_x),
+                                 old_robo_h)
+    trans_pred = math.sqrt(((old_robo_x - new_robo_x)**2) + ((old_robo_y - new_robo_y)**2))
+    rot2_pred = diff_heading_deg(diff_heading_deg(new_robo_h, old_robo_h), rot1_pred)
+    particle_mean = compute_mean_pose(particles)
+
+    if odom[0] != odom[1]:
+        for particle in particles:
+            alpha1 = 1.0
+            alpha2 = 1.0
+            alpha3 = 1.0
+            alpha4 = 1.0
+
+
+
+            x, y, h = particle.xyh
+
+
+
+
+
     return particles
 
 # ------------------------------------------------------------------------
