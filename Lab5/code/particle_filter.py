@@ -1,3 +1,5 @@
+import sys
+
 from .grid import *
 from .particle import Particle
 from .utils import *
@@ -45,10 +47,6 @@ def motion_update(particles, odom):
             rot2_rand = rot2_pred - add_gaussian_noise((rot2_pred * alpha1) + (trans_pred * alpha2), ODOM_HEAD_SIGMA)
             particle.move(rot1_rand, trans_rand, rot2_rand)
 
-
-
-
-
     return particles
 
 # ------------------------------------------------------------------------
@@ -69,5 +67,21 @@ def measurement_update(particles, measured_marker_list, grid):
         Returns: the list of particle represents belief p(x_{t} | u_{t})
                 after measurement update
     """
+
+    for particle in particles:
+        markers_visible_to_particle = particle.read_markers(grid)
+        marker_pairs = []
+        already_paired_markers = []
+        for cm in measured_marker_list:
+            closest_marker = None
+            closest_distance = sys.maxsize
+            for pm in markers_visible_to_particle:
+                if grid_distance(cm.rx, cm.ry, pm.x, pm.y) < closest_distance and pm not in already_paired_markers:
+                    closest_marker = pm
+                    closest_distance = grid_distance(cm.rx, cm.ry, pm.x, pm.y)
+            marker_pairs.append([cm, closest_marker])
+            already_paired_markers.append(closest_marker)
+
+
     measured_particles = []
     return measured_particles
