@@ -1,10 +1,11 @@
 import sys
 
-from .grid import *
-from .particle import Particle
-from .utils import *
-from .setting import *
+from grid import *
+from particle import Particle
+from utils import *
+from setting import *
 import math
+import numpy as np
 
 # ------------------------------------------------------------------------
 def motion_update(particles, odom):
@@ -68,8 +69,8 @@ def measurement_update(particles, measured_marker_list, grid):
         Returns: the list of particle represents belief p(x_{t} | u_{t})
                 after measurement update
     """
-    particle_weights = []
-    for i in range(0,len(particles)):
+    particle_weights = [1 for _ in range(len(particles))]
+    for i in range(len(particles)):
         particle = particles[i]
         markers_visible_to_particle = particle.read_markers(grid)
         marker_pairs = []
@@ -81,7 +82,7 @@ def measurement_update(particles, measured_marker_list, grid):
                 if grid_distance(cm[0], cm[1], pm[0], pm[1]) < closest_distance and pm not in already_paired_markers:
                     closest_marker = pm
                     closest_distance = grid_distance(cm[0], cm[1], pm[0], pm[1])
-            if closest_marker not None:
+            if closest_marker is not None:
                 marker_pairs.append([cm, closest_marker])
                 already_paired_markers.append(closest_marker)
 
@@ -97,17 +98,17 @@ def measurement_update(particles, measured_marker_list, grid):
 
     ## Normalization
     prob_sum = 0.0
-    for weight in particles_weights:
+    for weight in particle_weights:
         prob_sum += weight
-    for i in range(0,len(particles_weights)):
-        particles_weights[i] = particles_weights[i] / prob_sum
+    for i in range(len(particle_weights)):
+        particle_weights[i] = particle_weights[i] / prob_sum
 
 
     ## Resampling
     measured_particles = []
 
     for i in range(0, PARTICLE_COUNT):
-        rand = numpy.random.choice(particles, p=particle_weights)
+        rand = np.random.choice(particles, p=particle_weights)
         measured_particles.append(rand)
 
     return measured_particles
@@ -123,7 +124,7 @@ def get_particle_prob(marker_pairs):
 
     for pair in marker_pairs:
         dist = grid_distance(pair[0][0], pair[0][1], pair[1][0], pair[0][1])
-        diff_heading = diff_heading_def(pair[0][2], pair[1][2])
+        diff_heading = diff_heading_deg(pair[0][2], pair[1][2])
         exp = -1 * ( (dist**2/(2*MARKER_TRANS_SIGMA**2)) + (diff_heading**2/(2*MARKER_ROT_SIGMA**2)) )
         prob = prob * math.exp(exp)
     return prob
