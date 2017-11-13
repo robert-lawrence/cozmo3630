@@ -6,6 +6,7 @@ from utils import *
 from setting import *
 import math
 import numpy as np
+import random
 
 # ------------------------------------------------------------------------
 def motion_update(particles, odom):
@@ -100,19 +101,23 @@ def measurement_update(particles, measured_marker_list, grid):
     prob_sum = 0.0
     for weight in particle_weights:
         prob_sum += weight
-    for i in range(len(particle_weights)):
-        particle_weights[i] = particle_weights[i] / prob_sum
+    if prob_sum != 0: 
+        for i in range(len(particle_weights)):
+            particle_weights[i] = particle_weights[i] / prob_sum
 
+        ## Resampling
+        measured_particles = []
 
-    ## Resampling
-    measured_particles = []
-
-    for i in range(0, PARTICLE_COUNT):
-        rand = np.random.choice(particles, p=particle_weights)
-        measured_particles.append(rand)
+        for i in range(0, PARTICLE_COUNT):
+            rand = np.random.choice(particles, p=particle_weights)
+            x,y,h = rand.xyh
+            new_particle = Particle(add_gaussian_noise(x,MARKER_TRANS_SIGMA),add_gaussian_noise(y,MARKER_TRANS_SIGMA),add_gaussian_noise(h,MARKER_ROT_SIGMA))
+            measured_particles.append(new_particle)
+    else:
+        #Something went wrong! need to start over with random sample.
+        return Particle.create_random(PARTICLE_COUNT,grid)
 
     return measured_particles
-
 
 def get_particle_prob(marker_pairs):
     """
