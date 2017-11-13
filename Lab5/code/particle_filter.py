@@ -68,8 +68,9 @@ def measurement_update(particles, measured_marker_list, grid):
         Returns: the list of particle represents belief p(x_{t} | u_{t})
                 after measurement update
     """
-
-    for particle in particles:
+    particle_weights = []
+    for i in range(0,len(particles)):
+        particle = particles[i]
         markers_visible_to_particle = particle.read_markers(grid)
         marker_pairs = []
         already_paired_markers = []
@@ -80,11 +81,35 @@ def measurement_update(particles, measured_marker_list, grid):
                 if grid_distance(cm[0], cm[1], pm[0], pm[1]) < closest_distance and pm not in already_paired_markers:
                     closest_marker = pm
                     closest_distance = grid_distance(cm[0], cm[1], pm[0], pm[1])
-            marker_pairs.append([cm, closest_marker])
-            already_paired_markers.append(closest_marker)
+            if closest_marker not None:
+                marker_pairs.append([cm, closest_marker])
+                already_paired_markers.append(closest_marker)
+
+        if len(marker_pairs) != 0:
+            particle_prob = get_particle_prob(marker_pairs)
+        elif len(markers_visible_to_particle) != len(measured_marker_list):
+            particle_prob = 0
+        else:
+            #both lists should have len 0
+            particle_prob = 1
+
+        particle_weights[i] = particle_prob
+
+    ## Normalization
+    prob_sum = 0.0
+    for weight in particles_weights:
+        prob_sum += weight
+    for i in range(0,len(particles_weights)):
+        particles_weights[i] = particles_weights[i] / prob_sum
 
 
+    ## Resampling
     measured_particles = []
+
+    for i in range(0, PARTICLE_COUNT):
+        rand = numpy.random.choice(particles, p=particle_weights)
+        measured_particles.append(rand)
+
     return measured_particles
 
 
