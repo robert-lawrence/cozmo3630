@@ -77,9 +77,9 @@ def measurement_update(particles, measured_marker_list, grid):
             closest_marker = None
             closest_distance = sys.maxsize
             for pm in markers_visible_to_particle:
-                if grid_distance(cm.rx, cm.ry, pm.x, pm.y) < closest_distance and pm not in already_paired_markers:
+                if grid_distance(cm[0], cm[1], pm[0], pm[1]) < closest_distance and pm not in already_paired_markers:
                     closest_marker = pm
-                    closest_distance = grid_distance(cm.rx, cm.ry, pm.x, pm.y)
+                    closest_distance = grid_distance(cm[0], cm[1], pm[0], pm[1])
             marker_pairs.append([cm, closest_marker])
             already_paired_markers.append(closest_marker)
 
