@@ -38,9 +38,9 @@ def motion_update(particles, odom):
     trans_pred = math.sqrt(((old_robo_x - new_robo_x)**2) + ((old_robo_y - new_robo_y)**2))
     rot2_pred = diff_heading_deg(diff_heading_deg(new_robo_h, old_robo_h), rot1_pred)
 
-    alpha1 = 0.02
+    alpha1 = 0.06
     alpha2 = 0.02
-    alpha3 = 0.02
+    alpha3 = 0.04
     alpha4 = 0.01
     if odom[0] != odom[1]:
         for particle in particles:
@@ -90,12 +90,12 @@ def measurement_update(particles, measured_marker_list, grid):
                 marker_pairs.append([cm, closest_marker])
                 already_paired_markers.append(closest_marker)
 
-        if len(marker_pairs) != 0:
-            particle_prob = get_particle_prob(marker_pairs)
+        if not grid.is_in(particle.x, particle.y):
+            particle_prob = 0
         elif len(markers_visible_to_particle) != len(measured_marker_list):
             particle_prob = 0
-        elif not grid.is_in(particle.x, particle.y):
-            particle_prob = 0
+        elif len(marker_pairs) != 0:
+            particle_prob = get_particle_prob(marker_pairs)
         else:
             #both lists should have len 0
             particle_prob = 1
