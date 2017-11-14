@@ -9,6 +9,9 @@ import numpy as np
 import random
 import time
 
+
+# Robert Smith and Mitchell Myers
+
 # ------------------------------------------------------------------------
 def motion_update(particles, odom):
     """ Particle filter motion update
