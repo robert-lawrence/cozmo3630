@@ -1,5 +1,5 @@
 
-PARTICLE_COUNT = 500    # Total number of particles in your filter
+PARTICLE_COUNT = 5000    # Total number of particles in your filter
 
 # odometry Gaussian noise model
 ODOM_TRANS_SIGMA = 0.02
