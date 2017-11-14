@@ -40,7 +40,7 @@ def motion_update(particles, odom):
     alpha1 = 0.02
     alpha2 = 0.02
     alpha3 = 0.02
-    alpha4 = 0.02
+    alpha4 = 0.01
     if odom[0] != odom[1]:
         for particle in particles:
 
@@ -81,10 +81,8 @@ def measurement_update(particles, measured_marker_list, grid):
             closest_distance = sys.maxsize
             for pm in markers_visible_to_particle:
                 dist = grid_distance(cm[0], cm[1], pm[0], pm[1])
-                if dist < closest_distance and pm not in already_paired_markers:
                 if grid_distance(cm[0], cm[1], pm[0], pm[1]) + diff_heading_deg(cm[2],pm[2])/10 < closest_distance and pm not in already_paired_markers:
                     closest_marker = pm
-                    closest_distance = dist
                     closest_distance = grid_distance(cm[0], cm[1], pm[0], pm[1]) + diff_heading_deg(cm[2],pm[2])/10
             if closest_marker is not None:
                 marker_pairs.append([cm, closest_marker])
