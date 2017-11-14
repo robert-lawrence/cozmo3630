@@ -32,22 +32,22 @@ def motion_update(particles, odom):
     new_robo_y = odom[1][1]
     new_robo_h = odom[1][2]
 
-    rot1_pred = diff_heading_deg(math.atan2(new_robo_y - old_robo_y, new_robo_x - old_robo_x),
+    rot1_pred = diff_heading_deg(math.degrees(math.atan2(new_robo_y - old_robo_y, new_robo_x - old_robo_x)),
                                  old_robo_h)
     trans_pred = math.sqrt(((old_robo_x - new_robo_x)**2) + ((old_robo_y - new_robo_y)**2))
-    rot2_pred = diff_heading_deg(new_robo_h - old_robo_h, rot1_pred)
+    rot2_pred = diff_heading_deg(diff_heading_deg(new_robo_h, old_robo_h), rot1_pred)
 
     if odom[0] != odom[1]:
         for particle in particles:
-            alpha1 = 0.01
-            alpha2 = 0.01
+            alpha1 = 0.05
+            alpha2 = 0.05
             alpha3 = 0.05
             alpha4 = 0.05
 
-            rot1_rand = add_gaussian_noise(rot1_pred - ((rot1_pred * alpha1) + (trans_pred * alpha2)), ODOM_HEAD_SIGMA)
-            trans_rand = add_gaussian_noise(trans_pred - ((trans_pred * alpha3) + (alpha4 * (rot1_pred + rot2_pred))),
+            rot1_rand = rot1_pred - random.gauss(((rot1_pred * alpha1) + (trans_pred * alpha2)), ODOM_HEAD_SIGMA)
+            trans_rand = trans_pred - random.gauss(((trans_pred * alpha3) + (alpha4 * (rot1_pred + rot2_pred))),
                                                          ODOM_TRANS_SIGMA)
-            rot2_rand = add_gaussian_noise(rot2_pred - ((rot2_pred * alpha1) + (trans_pred * alpha2)), ODOM_HEAD_SIGMA)
+            rot2_rand = rot2_pred - random.gauss(((rot2_pred * alpha1) + (trans_pred * alpha2)), ODOM_HEAD_SIGMA)
             particle.move(rot1_rand, trans_rand, rot2_rand)
 
     return particles
