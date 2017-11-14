@@ -37,17 +37,17 @@ def motion_update(particles, odom):
     trans_pred = math.sqrt(((old_robo_x - new_robo_x)**2) + ((old_robo_y - new_robo_y)**2))
     rot2_pred = diff_heading_deg(diff_heading_deg(new_robo_h, old_robo_h), rot1_pred)
 
+    alpha1 = 0.02
+    alpha2 = 0.02
+    alpha3 = 0.02
+    alpha4 = 0.02
     if odom[0] != odom[1]:
         for particle in particles:
-            alpha1 = 0.05
-            alpha2 = 0.05
-            alpha3 = 0.05
-            alpha4 = 0.05
 
-            rot1_rand = rot1_pred - random.gauss(((rot1_pred * alpha1) + (trans_pred * alpha2)), ODOM_HEAD_SIGMA)
-            trans_rand = trans_pred - random.gauss(((trans_pred * alpha3) + (alpha4 * (rot1_pred + rot2_pred))),
+            rot1_rand = rot1_pred - random.gauss(0, ((rot1_pred * alpha1) + (trans_pred * alpha2)) * ODOM_HEAD_SIGMA)
+            trans_rand = trans_pred - random.gauss(0, ((trans_pred * alpha3) + (alpha4 * (rot1_pred + rot2_pred))) *
                                                          ODOM_TRANS_SIGMA)
-            rot2_rand = rot2_pred - random.gauss(((rot2_pred * alpha1) + (trans_pred * alpha2)), ODOM_HEAD_SIGMA)
+            rot2_rand = rot2_pred - random.gauss(0, ((rot2_pred * alpha1) + (trans_pred * alpha2)) * ODOM_HEAD_SIGMA)
             particle.move(rot1_rand, trans_rand, rot2_rand)
 
     return particles
@@ -82,8 +82,10 @@ def measurement_update(particles, measured_marker_list, grid):
             for pm in markers_visible_to_particle:
                 dist = grid_distance(cm[0], cm[1], pm[0], pm[1])
                 if dist < closest_distance and pm not in already_paired_markers:
+                if grid_distance(cm[0], cm[1], pm[0], pm[1]) + diff_heading_deg(cm[2],pm[2])/10 < closest_distance and pm not in already_paired_markers:
                     closest_marker = pm
                     closest_distance = dist
+                    closest_distance = grid_distance(cm[0], cm[1], pm[0], pm[1]) + diff_heading_deg(cm[2],pm[2])/10
             if closest_marker is not None:
                 marker_pairs.append([cm, closest_marker])
                 already_paired_markers.append(closest_marker)
@@ -96,7 +98,7 @@ def measurement_update(particles, measured_marker_list, grid):
             particle_prob = 0
         else:
             #both lists should have len 0
-            particle_prob = 1.0
+            particle_prob = 1
 
         particle_weights.append(particle_prob)
 
