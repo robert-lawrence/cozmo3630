@@ -72,6 +72,7 @@ def measurement_update(particles, measured_marker_list, grid):
                 after measurement update
     """
     particle_weights = []
+    DEBUG_num_valid = 0
     # print("Time before particle weighting: ", time.time())
     for i in range(len(particles)):
         particle = particles[i]
@@ -83,9 +84,9 @@ def measurement_update(particles, measured_marker_list, grid):
             closest_distance = sys.maxsize
             for pm in markers_visible_to_particle:
                 dist = grid_distance(cm[0], cm[1], pm[0], pm[1])
-                if dist + diff_heading_deg(cm[2],pm[2])/10 < closest_distance and pm not in already_paired_markers:
+                if dist + diff_heading_deg(cm[2],pm[2])/100 < closest_distance and pm not in already_paired_markers:
                     closest_marker = pm
-                    closest_distance = dist + diff_heading_deg(cm[2],pm[2])/10
+                    closest_distance = dist + diff_heading_deg(cm[2],pm[2])/100
             if closest_marker is not None:
                 marker_pairs.append([cm, closest_marker])
                 already_paired_markers.append(closest_marker)
@@ -96,6 +97,7 @@ def measurement_update(particles, measured_marker_list, grid):
             particle_prob = 0
         elif len(marker_pairs) != 0:
             particle_prob = get_particle_prob(marker_pairs)
+            DEBUG_num_valid += 1
         else:
             #both lists should have len 0
             particle_prob = 1
@@ -103,18 +105,20 @@ def measurement_update(particles, measured_marker_list, grid):
         particle_weights.append(particle_prob)
     ## Normalization
     prob_sum = sum(particle_weights)
+    #print("Num valid: "+str(DEBUG_num_valid)+" Num markers: "+str(len(measured_marker_list)))
     if prob_sum != 0:
         for i in range(len(particle_weights)):
             particle_weights[i] = particle_weights[i] / prob_sum
-
+        #print("Prob_sum: "+str(prob_sum))
         ## Resampling
         measured_particles = []
-        new_sample = np.random.choice(particles, PARTICLE_COUNT, p=particle_weights, replace=True)
+        new_sample = np.random.choice(particles, PARTICLE_COUNT-10, p=particle_weights, replace=True)
         for particle in new_sample:
             x, y, h = particle.xyh
             new_particle = Particle(add_gaussian_noise(x, MARKER_TRANS_SIGMA),
                                     add_gaussian_noise(y, MARKER_TRANS_SIGMA), add_gaussian_noise(h, MARKER_ROT_SIGMA))
             measured_particles.append(new_particle)
+        measured_particles = measured_particles + Particle.create_random(10,grid)
 
     else:
         #Something went wrong! need to start over with random sample.
