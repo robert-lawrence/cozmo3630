@@ -70,7 +70,7 @@ def measurement_update(particles, measured_marker_list, grid):
         Returns: the list of particle represents belief p(x_{t} | u_{t})
                 after measurement update
     """
-    particle_weights = [1 for _ in range(len(particles))]
+    particle_weights = []
     for i in range(len(particles)):
         particle = particles[i]
         markers_visible_to_particle = particle.read_markers(grid)
@@ -80,9 +80,10 @@ def measurement_update(particles, measured_marker_list, grid):
             closest_marker = None
             closest_distance = sys.maxsize
             for pm in markers_visible_to_particle:
-                if grid_distance(cm[0], cm[1], pm[0], pm[1]) < closest_distance and pm not in already_paired_markers:
+                dist = grid_distance(cm[0], cm[1], pm[0], pm[1])
+                if dist < closest_distance and pm not in already_paired_markers:
                     closest_marker = pm
-                    closest_distance = grid_distance(cm[0], cm[1], pm[0], pm[1])
+                    closest_distance = dist
             if closest_marker is not None:
                 marker_pairs.append([cm, closest_marker])
                 already_paired_markers.append(closest_marker)
@@ -95,14 +96,12 @@ def measurement_update(particles, measured_marker_list, grid):
             particle_prob = 0
         else:
             #both lists should have len 0
-            particle_prob = 1
+            particle_prob = 1.0
 
-        particle_weights[i] = particle_prob
+        particle_weights.append(particle_prob)
 
     ## Normalization
-    prob_sum = 0.0
-    for weight in particle_weights:
-        prob_sum += weight
+    prob_sum = sum(particle_weights)
     if prob_sum != 0: 
         for i in range(len(particle_weights)):
             particle_weights[i] = particle_weights[i] / prob_sum
@@ -111,8 +110,8 @@ def measurement_update(particles, measured_marker_list, grid):
         measured_particles = []
 
         for i in range(0, PARTICLE_COUNT):
-            rand = np.random.choice(particles, p=particle_weights)
-            x,y,h = rand.xyh
+            rand = np.random.choice(particles, p=particle_weights, replace=True)
+            x, y, h = rand.xyh
             new_particle = Particle(add_gaussian_noise(x,MARKER_TRANS_SIGMA),add_gaussian_noise(y,MARKER_TRANS_SIGMA),add_gaussian_noise(h,MARKER_ROT_SIGMA))
             measured_particles.append(new_particle)
     else:
