@@ -6,6 +6,7 @@ import numpy as np
 from numpy.linalg import inv
 import threading
 import time
+from cozmo.util import degrees
 
 from ar_markers.hamming.detect import detect_markers
 
@@ -135,6 +136,17 @@ async def run(robot: cozmo.robot.Robot):
         vis_markers = await image_processing(robot)
         markers_2d = cvt_2Dmarker_measurements(vis_markers)
         m_x, m_y, m_h, m_confident = ParticleFilter.update(pf, robo_odom, markers_2d)
+        if robot.is_picked_up:
+            await robot.say_text("Please put me down!!").wait_for_completed()
+            pf = ParticleFilter(grid)
+            time.sleep(5)
+            continue
+        if m_confident:
+            await robot.go_to_pose(goal, relative_to_robot=True, in_parallel=False).wait_for_completed()
+        else:
+            await robot.turn_in_place(degrees(30)).wait_for_completed()
+            continue
+        gui.updated.set()
 
     ############################################################################
 
