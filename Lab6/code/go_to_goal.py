@@ -130,6 +130,12 @@ async def run(robot: cozmo.robot.Robot):
     ############################################################################
     ######################### YOUR CODE HERE####################################
 
+    while True:
+        robo_odom = compute_odometry(robot.pose)
+        vis_markers = await image_processing(robot)
+        markers_2d = cvt_2Dmarker_measurements(vis_markers)
+        m_x, m_y, m_h, m_confident = ParticleFilter.update(pf, robo_odom, markers_2d)
+
     ############################################################################
 
 
