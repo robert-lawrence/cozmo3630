@@ -140,12 +140,13 @@ async def run(robot: cozmo.robot.Robot):
             await robot.say_text("Please put me down!!").wait_for_completed()
             pf = ParticleFilter(grid)
             time.sleep(5)
-            continue
-        if m_confident:
+        elif m_confident:
             await robot.go_to_pose(goal, relative_to_robot=True, in_parallel=False).wait_for_completed()
         else:
             await robot.turn_in_place(degrees(30)).wait_for_completed()
-            continue
+        gui.show_particles(pf.particles)
+        #gui.show_mean(estimated[0], estimated[1], estimated[2], estimated[3])
+        gui.show_robot(robot)
         gui.updated.set()
 
     ############################################################################
