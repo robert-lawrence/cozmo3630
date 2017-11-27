@@ -145,10 +145,14 @@ async def run(robot: cozmo.robot.Robot):
         elif m_confident:
             print("Going to the goal pose")
             print ("X: {}, Y:{}".format(m_x,m_y))
-            x_offset = robot.pose.position.x - m_x
-            y_offset = robot.pose.position.y - m_y
-            h_offset = robot.pose_angle.degrees - m_h
-            goal_pose = cozmo.util.Pose(10*(goal[0]-x_offset), 10*(goal[1]-y_offset), goal[2], angle_z=degrees(goal[2]))
+            x_offset = m_x - robot.pose.position.x 
+            y_offset = m_y - robot.pose.position.y
+            h_offset = -1* (m_h - robot.pose_angle.degrees)
+            goal_dist = math.sqrt((goal[0]-m_x)**2 + (goal[1]-m_y)**2)
+            local_x = math.cos(goal[0]-x_offset) - math.sin(goal[1]-y_offset)
+            local_y = math.sin(goal[0]-x_offset) + math.cos(goal[1]-y_offset)
+
+            goal_pose = cozmo.util.Pose(10*local_x, 10*local_y, goal[2], angle_z=degrees(goal[2]))
             print(robot.pose)
             await robot.go_to_pose(goal_pose, relative_to_robot=True, in_parallel=False).wait_for_completed()
             await robot.say_text("I did it!!").wait_for_completed()
