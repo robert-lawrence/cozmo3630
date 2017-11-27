@@ -6,8 +6,8 @@ ODOM_TRANS_SIGMA = 0.02
 ODOM_HEAD_SIGMA = 2
 
 # marker measurement Gaussian noise model
-MARKER_TRANS_SIGMA = 0.5 / 2
-MARKER_ROT_SIGMA = 5 / 2
+MARKER_TRANS_SIGMA = 0.5 / 1.8
+MARKER_ROT_SIGMA = 5 / 1.8
 
 PARTICLE_MAX_SHOW = 500		# Max number of particles to be shown in GUI (for speed up)
 

@@ -6,6 +6,7 @@ import numpy as np
 from numpy.linalg import inv
 import threading
 import time
+import math
 
 from ar_markers.hamming.detect import detect_markers
 
@@ -145,12 +146,16 @@ async def run(robot: cozmo.robot.Robot):
         elif m_confident:
             print("Going to the goal pose")
             print ("X: {}, Y:{}".format(m_x,m_y))
-            x_offset = m_x - robot.pose.position.x 
-            y_offset = m_y - robot.pose.position.y
-            h_offset = -1* (m_h - robot.pose_angle.degrees)
-            goal_dist = math.sqrt((goal[0]-m_x)**2 + (goal[1]-m_y)**2)
-            local_x = math.cos(goal[0]-x_offset) - math.sin(goal[1]-y_offset)
-            local_y = math.sin(goal[0]-x_offset) + math.cos(goal[1]-y_offset)
+            h_offset = (m_h - robot.pose_angle.degrees)
+            x_1 = math.cos(h_offset)*robot.pose.position.x -math.sin(h_offset)*robot.pose.position.y
+            y_1 = math.sin(h_offset) * robot.pose.position.x + math.cos(h_offset) * robot.pose.position.y
+
+            x_offset = m_x - x_1
+            y_offset = m_y - y_1
+
+            h_offset *= -1
+            local_x = math.cos(h_offset)*(goal[0]-x_offset) - math.sin(h_offset)*(goal[1]-y_offset)
+            local_y = math.sin(h_offset)*(goal[0]-x_offset) + math.cos(h_offset)*(goal[1]-y_offset)
 
             goal_pose = cozmo.util.Pose(10*local_x, 10*local_y, goal[2], angle_z=degrees(goal[2]))
             print(robot.pose)
