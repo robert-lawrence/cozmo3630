@@ -1,13 +1,12 @@
-import sys
-
 from grid import *
 from particle import Particle
 from utils import *
 from setting import *
+
 import math
 import numpy as np
 import random
-import time
+import sys
 
 # ------------------------------------------------------------------------
 def motion_update(particles, odom):

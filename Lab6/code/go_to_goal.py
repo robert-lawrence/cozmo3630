@@ -6,7 +6,6 @@ import numpy as np
 from numpy.linalg import inv
 import threading
 import time
-from cozmo.util import degrees
 
 from ar_markers.hamming.detect import detect_markers
 
@@ -16,6 +15,7 @@ from particle import Particle, Robot
 from setting import *
 from particle_filter import *
 from utils import *
+from cozmo.util import distance_mm, speed_mmps, degrees
 
 # camera params
 camK = np.matrix([[295, 0, 160], [0, 295, 120], [0, 0, 1]], dtype='float32')
@@ -127,28 +127,46 @@ async def run(robot: cozmo.robot.Robot):
 
     #start particle filter
     pf = ParticleFilter(grid)
+    await robot.set_head_angle(degrees(0)).wait_for_completed()
 
     ############################################################################
     ######################### YOUR CODE HERE####################################
-
     while True:
         robo_odom = compute_odometry(robot.pose)
+        print(robo_odom)
         vis_markers = await image_processing(robot)
         markers_2d = cvt_2Dmarker_measurements(vis_markers)
+        print(markers_2d)
         m_x, m_y, m_h, m_confident = ParticleFilter.update(pf, robo_odom, markers_2d)
         if robot.is_picked_up:
             await robot.say_text("Please put me down!!").wait_for_completed()
             pf = ParticleFilter(grid)
             time.sleep(5)
         elif m_confident:
-            await robot.go_to_pose(goal, relative_to_robot=True, in_parallel=False).wait_for_completed()
+            print("Going to the goal pose")
+            print ("X: {}, Y:{}".format(m_x,m_y))
+            x_offset = robot.pose.position.x - m_x
+            y_offset = robot.pose.position.y - m_y
+            h_offset = robot.pose_angle.degrees - m_h
+            goal_pose = cozmo.util.Pose(10*(goal[0]-x_offset), 10*(goal[1]-y_offset), goal[2], angle_z=degrees(goal[2]))
+            print(robot.pose)
+            await robot.go_to_pose(goal_pose, relative_to_robot=True, in_parallel=False).wait_for_completed()
+            await robot.say_text("I did it!!").wait_for_completed()
+            print(robot.pose)
+            break
         else:
-            await robot.turn_in_place(degrees(30)).wait_for_completed()
+            last_pose = robot.pose
+            if abs(m_x  - 130) < 20 and abs(m_y - 90) < 10:
+                await robot.turn_in_place(degrees(15)).wait_for_completed()
+            else:
+                await robot.turn_in_place(degrees(15)).wait_for_completed()
+                # await robot.drive_straight(distance_mm(40), speed_mmps(40), False, False,
+                #                                            0).wait_for_completed()
+        gui.show_mean(m_x, m_y, m_h, m_confident)
         gui.show_particles(pf.particles)
-        #gui.show_mean(estimated[0], estimated[1], estimated[2], estimated[3])
-        gui.show_robot(robot)
+        robbie = Robot(robot.pose.position.x, robot.pose.position.y, robot.pose_angle.degrees)
+        gui.show_robot(robbie)
         gui.updated.set()
-
     ############################################################################
 
 
