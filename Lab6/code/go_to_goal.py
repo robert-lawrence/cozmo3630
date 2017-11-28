@@ -132,18 +132,21 @@ async def run(robot: cozmo.robot.Robot):
 
     ############################################################################
     ######################### YOUR CODE HERE####################################
+    turn_num = 0
+    state = "In motion"
     while True:
+        if robot.is_picked_up:
+            await robot.say_text("Hey put me down!!").wait_for_completed()
+            pf = ParticleFilter(grid)
+            time.sleep(5)
+            state = "In motion"
         robo_odom = compute_odometry(robot.pose)
         print(robo_odom)
         vis_markers = await image_processing(robot)
         markers_2d = cvt_2Dmarker_measurements(vis_markers)
         print(markers_2d)
         m_x, m_y, m_h, m_confident = ParticleFilter.update(pf, robo_odom, markers_2d)
-        if robot.is_picked_up:
-            await robot.say_text("Please put me down!!").wait_for_completed()
-            pf = ParticleFilter(grid)
-            time.sleep(5)
-        elif m_confident:
+        if m_confident and state is not "Wait to be picked up":
             print("Going to the goal pose")
             print ("X: {}, Y:{}".format(m_x,m_y))
 
@@ -184,15 +187,18 @@ async def run(robot: cozmo.robot.Robot):
             await robot.go_to_pose(goal_pose, relative_to_robot=True, in_parallel=False).wait_for_completed()
             await robot.say_text("I did it!!").wait_for_completed()
             print(robot.pose)
-            break
-        else:
+            state = "Wait to be picked up"
+        elif state is not "Wait to be picked up":
             last_pose = robot.pose
-            if abs(m_x  - 130) < 20 and abs(m_y - 90) < 10:
+            if abs(m_x - 130) < 20 and abs(m_y - 90) < 10:
                 await robot.turn_in_place(degrees(15)).wait_for_completed()
             else:
-                await robot.turn_in_place(degrees(15)).wait_for_completed()
-                # await robot.drive_straight(distance_mm(40), speed_mmps(40), False, False,
-                #                                            0).wait_for_completed()
+                if turn_num < 25:
+                    await robot.turn_in_place(degrees(15)).wait_for_completed()
+                    turn_num += 1
+                else:
+                    await robot.drive_straight(distance_mm(40), speed_mmps(40), False, False,
+                                                           0).wait_for_completed()
         gui.show_mean(m_x, m_y, m_h, m_confident)
         gui.show_particles(pf.particles)
         robbie = Robot(robot.pose.position.x, robot.pose.position.y, robot.pose_angle.degrees)
