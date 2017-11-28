@@ -146,18 +146,40 @@ async def run(robot: cozmo.robot.Robot):
         elif m_confident:
             print("Going to the goal pose")
             print ("X: {}, Y:{}".format(m_x,m_y))
-            h_offset = (m_h - robot.pose_angle.degrees)
-            x_1 = math.cos(h_offset)*robot.pose.position.x -math.sin(h_offset)*robot.pose.position.y
-            y_1 = math.sin(h_offset) * robot.pose.position.x + math.cos(h_offset) * robot.pose.position.y
 
-            x_offset = m_x - x_1
-            y_offset = m_y - y_1
+            # Part 1: Figure out Robot's origin + theta offset
+            # For consistency, the global frame is A, the one used by the bot is B
+            # need tp find angle theta_b_a (radians) that represents angle FROM X_b TO X_a
+            theta_a_b = math.radians(m_h - robot.pose_angle.degrees)
+            theta_b_a = math.radians(robot.pose_angle.degrees - m_h)
 
-            h_offset *= -1
-            local_x = math.cos(h_offset)*(goal[0]-x_offset) - math.sin(h_offset)*(goal[1]-y_offset)
-            local_y = math.sin(h_offset)*(goal[0]-x_offset) + math.cos(h_offset)*(goal[1]-y_offset)
+            # need to find vector t (in frame A) that represents the origin of B in A
+            # Solution: We have robot pos in both B and A. a_to_r, b_to_r, and t make a triangle.
+            # First we must get R_b in the coordinate system of A, then a_to_r - b_to_r = t.
+            a_to_r_in_A = (m_x,m_y)
+            b_to_r_in_B = (robot.pose.position.x/10., robot.pose.position.y/10.) # in mm, right?
+            b_to_r_in_A_x = math.cos(theta_a_b)* b_to_r_in_B[0] \
+                    - math.sin(theta_a_b)*b_to_r_in_B[1]
+            b_to_r_in_A_y = math.sin(theta_a_b) * b_to_r_in_B[0] \ 
+                    + math.cos(theta_a_b) * b_to_r_in_B[1]
+            b_to_r_in_A = (b_to_r_in_A_x, b_to_r_in_A_y)
+            t = ( a_to_r_in_A[0] - b_to_r_in_B[0], a_to_r_in_A[1] - b_to_r_in_B[1] )
 
-            goal_pose = cozmo.util.Pose(10*local_x, 10*local_y, goal[2], angle_z=degrees(goal[2]))
+            # Part 2: Find goal_in_B
+            goal_in_A = (goal[0],goal[1])
+            goal_in_B_x = math.cos(theta_b_a) * goal_in_A[0] \
+                    - math.sin(theta_b_a) *goal_in_A[1] \
+                    + t[0]
+            goal_in_B_y = math.sin(theta_b_a) * goal_in_A[0] \
+                    + math.cos(theta_b_a) * goal_in_A[1] \
+                    + t[1]
+            
+
+            # h_offset *= -1
+            # local_x = math.cos(h_offset)*(goal[0]-x_offset) - math.sin(h_offset)*(goal[1]-y_offset)
+            # local_y = math.sin(h_offset)*(goal[0]-x_offset) + math.cos(h_offset)*(goal[1]-y_offset)
+
+            goal_pose = cozmo.util.Pose(10*goal_in_B_x, 10*goal_in_B_y, goal[2], angle_z=degrees(goal[2]))
             print(robot.pose)
             await robot.go_to_pose(goal_pose, relative_to_robot=True, in_parallel=False).wait_for_completed()
             await robot.say_text("I did it!!").wait_for_completed()
