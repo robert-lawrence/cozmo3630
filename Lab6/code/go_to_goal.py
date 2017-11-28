@@ -118,10 +118,22 @@ class ParticleFilter:
         m_x, m_y, m_h, m_confident = compute_mean_pose(self.particles)
         return (m_x, m_y, m_h, m_confident)
 
+pf = ParticleFilter(grid)
+state = "In motion"
+
+async def is_kidnapped(robot: cozmo.robot.Robot):
+    global pf, state
+    while True:
+        if robot.is_picked_up:
+            await robot.say_text("Hey put me down!!").wait_for_completed()
+            pf = ParticleFilter(grid)
+            time.sleep(5)
+            state = "In motion"
 
 async def run(robot: cozmo.robot.Robot):
     global last_pose
     global grid, gui
+    global pf, state
 
     # start streaming
     robot.camera.image_stream_enabled = True
@@ -133,13 +145,12 @@ async def run(robot: cozmo.robot.Robot):
     ############################################################################
     ######################### YOUR CODE HERE####################################
     turn_num = 0
-    state = "In motion"
     while True:
-        if robot.is_picked_up:
-            await robot.say_text("Hey put me down!!").wait_for_completed()
-            pf = ParticleFilter(grid)
-            time.sleep(5)
-            state = "In motion"
+        # if robot.is_picked_up:
+        #     await robot.say_text("Hey put me down!!").wait_for_completed()
+        #     pf = ParticleFilter(grid)
+        #     time.sleep(5)
+        #     state = "In motion"
         robo_odom = compute_odometry(robot.pose)
         print(robo_odom)
         vis_markers = await image_processing(robot)
@@ -214,12 +225,22 @@ class CozmoThread(threading.Thread):
     def run(self):
         cozmo.run_program(run, use_viewer=False)
 
+class KidnappingThread(threading.Thread):
+    def __init__(self):
+        threading.Thread.__init__(self, daemon=False)
+
+    def is_kidnapped(self):
+        cozmo.run_program(is_kidnapped, use_viewer=False)
 
 if __name__ == '__main__':
 
     # cozmo thread
     cozmo_thread = CozmoThread()
     cozmo_thread.start()
+
+    # kidnapping thread
+    kidnap_thread = KidnappingThread()
+    kidnap_thread.is_kidnapped()
 
     # init
     grid = CozGrid(Map_filename)
