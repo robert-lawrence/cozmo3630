@@ -16,7 +16,7 @@ from particle import Particle, Robot
 from setting import *
 from particle_filter import *
 from utils import *
-from cozmo.util import distance_mm, speed_mmps, degrees
+from cozmo.util import distance_mm, speed_mmps, degrees, distance_inches
 
 # camera params
 camK = np.matrix([[295, 0, 160], [0, 295, 120], [0, 0, 1]], dtype='float32')
@@ -118,22 +118,22 @@ class ParticleFilter:
         m_x, m_y, m_h, m_confident = compute_mean_pose(self.particles)
         return (m_x, m_y, m_h, m_confident)
 
-pf = ParticleFilter(grid)
-state = "In motion"
-
-async def is_kidnapped(robot: cozmo.robot.Robot):
-    global pf, state
-    while True:
-        if robot.is_picked_up:
-            await robot.say_text("Hey put me down!!").wait_for_completed()
-            pf = ParticleFilter(grid)
-            time.sleep(5)
-            state = "In motion"
+# pf = ParticleFilter(grid)
+# state = "In motion"
+#
+# async def is_kidnapped(robot: cozmo.robot.Robot):
+#     global pf, state
+#     while True:
+#         if robot.is_picked_up:
+#             await robot.say_text("Hey put me down!!").wait_for_completed()
+#             pf = ParticleFilter(grid)
+#             time.sleep(5)
+#             state = "In motion"
 
 async def run(robot: cozmo.robot.Robot):
     global last_pose
     global grid, gui
-    global pf, state
+    # global pf, state
 
     # start streaming
     robot.camera.image_stream_enabled = True
@@ -141,23 +141,29 @@ async def run(robot: cozmo.robot.Robot):
     #start particle filter
     pf = ParticleFilter(grid)
     await robot.set_head_angle(degrees(0)).wait_for_completed()
-
+    state = "In motion"
     ############################################################################
     ######################### YOUR CODE HERE####################################
     turn_num = 0
     while True:
-        # if robot.is_picked_up:
-        #     await robot.say_text("Hey put me down!!").wait_for_completed()
-        #     pf = ParticleFilter(grid)
-        #     time.sleep(5)
-        #     state = "In motion"
         robo_odom = compute_odometry(robot.pose)
         print(robo_odom)
         vis_markers = await image_processing(robot)
         markers_2d = cvt_2Dmarker_measurements(vis_markers)
         print(markers_2d)
         m_x, m_y, m_h, m_confident = ParticleFilter.update(pf, robo_odom, markers_2d)
-        if m_confident and state is not "Wait to be picked up":
+        gui.show_mean(m_x, m_y, m_h, m_confident)
+        gui.show_particles(pf.particles)
+        robbie = Robot(robot.pose.position.x, robot.pose.position.y, robot.pose_angle.degrees)
+        gui.show_robot(robbie)
+        gui.updated.set()
+        if robot.is_picked_up:
+            await robot.say_text("Hey put me down!!").wait_for_completed()
+            pf = ParticleFilter(grid)
+            time.sleep(5)
+            state = "In motion"
+            await robot.set_head_angle(degrees(0)).wait_for_completed()
+        elif m_confident and state == "In motion":
             print("Going to the goal pose")
             print ("X: {}, Y:{}".format(m_x,m_y))
 
@@ -172,49 +178,71 @@ async def run(robot: cozmo.robot.Robot):
             # First we must get R_b in the coordinate system of A, then a_to_r - b_to_r = t.
             a_to_r_in_A = (m_x,m_y)
             b_to_r_in_B = (robot.pose.position.x/10., robot.pose.position.y/10.) # in mm, right?
-            b_to_r_in_A_x = math.cos(theta_a_b)* b_to_r_in_B[0] \
-                    - math.sin(theta_a_b)*b_to_r_in_B[1]
-            b_to_r_in_A_y = math.sin(theta_a_b) * b_to_r_in_B[0] \ 
-                    + math.cos(theta_a_b) * b_to_r_in_B[1]
+            b_to_r_in_A_x = (math.cos(theta_a_b)* b_to_r_in_B[0] \
+                    - math.sin(theta_a_b)*b_to_r_in_B[1])
+            b_to_r_in_A_y = (math.sin(theta_a_b) * b_to_r_in_B[0] \
+                    + math.cos(theta_a_b) * b_to_r_in_B[1])
             b_to_r_in_A = (b_to_r_in_A_x, b_to_r_in_A_y)
             t = ( a_to_r_in_A[0] - b_to_r_in_B[0], a_to_r_in_A[1] - b_to_r_in_B[1] )
 
             # Part 2: Find goal_in_B
             goal_in_A = (goal[0],goal[1])
-            goal_in_B_x = math.cos(theta_b_a) * goal_in_A[0] \
+            goal_in_B_x = (math.cos(theta_b_a) * goal_in_A[0] \
                     - math.sin(theta_b_a) *goal_in_A[1] \
-                    + t[0]
-            goal_in_B_y = math.sin(theta_b_a) * goal_in_A[0] \
+                    + t[0])
+            goal_in_B_y = (math.sin(theta_b_a) * goal_in_A[0] \
                     + math.cos(theta_b_a) * goal_in_A[1] \
-                    + t[1]
-            
+                    + t[1])
+            r_to_goal_in_B = (goal_in_B_x - b_to_r_in_B[0], goal_in_B_y - b_to_r_in_B[1])
+            head = math.degrees(math.atan2(r_to_goal_in_B[1], r_to_goal_in_B[0])) - robot.pose_angle.degrees
+            actual_head = math.degrees(math.atan2(goal[1],goal[0])) - m_h
+            print("Calculated Head: " + str(head) + " Actual Head: " + str(actual_head))
+            print("Observed theta: " + str(m_h) + "Calculated theta: " + str(robot.pose_angle.degrees + theta_a_b))
+
+
+            dist = (goal[0]-m_x,goal[1]-m_y)
+            print(dist)
+            delta_t = math.degrees(math.atan2(dist[1], dist[0])) - m_h
+            dist = math.sqrt(dist[0]**2 + dist[1]**2)
+            print("M_H: " + str(m_h))
+            print("M_X: " + str(m_x))
+            print("M_Y: " + str(m_y))
+            print("Delta_t: " + str(delta_t))
+            print("Dist: " + str(dist))
+
+
+
+            await robot.turn_in_place(degrees(delta_t)).wait_for_completed()
+            #dist = math.sqrt(r_to_goal_in_B[0]**2 + r_to_goal_in_B[1]**2)
+            await robot.drive_straight(distance_inches(dist), speed_mmps(40)).wait_for_completed()
+            # print("Vectors:")
+            # print(m_x,m_y)
+            # print(str(math.degrees(theta_a_b)) + " + " + str(robot.pose_angle.degrees))
+            # print(b_to_r_in_B)
+            # print(goal_in_A)
+            # print((goal_in_B_x,goal_in_B_y))
+            # print(t)
+            # print(r_to_goal_in_B)
 
             # h_offset *= -1
             # local_x = math.cos(h_offset)*(goal[0]-x_offset) - math.sin(h_offset)*(goal[1]-y_offset)
             # local_y = math.sin(h_offset)*(goal[0]-x_offset) + math.cos(h_offset)*(goal[1]-y_offset)
 
-            goal_pose = cozmo.util.Pose(10*goal_in_B_x, 10*goal_in_B_y, goal[2], angle_z=degrees(goal[2]))
-            print(robot.pose)
-            await robot.go_to_pose(goal_pose, relative_to_robot=True, in_parallel=False).wait_for_completed()
+            # goal_pose = cozmo.util.Pose(10*goal_in_B_x, 10*goal_in_B_y, goal[2], angle_z=degrees(goal[2]))
+            # print(robot.pose)
+            # await robot.go_to_pose(goal_pose, relative_to_robot=True, in_parallel=False).wait_for_completed()
             await robot.say_text("I did it!!").wait_for_completed()
             print(robot.pose)
             state = "Wait to be picked up"
-        elif state is not "Wait to be picked up":
+        elif state == "In motion":
             last_pose = robot.pose
             if abs(m_x - 130) < 20 and abs(m_y - 90) < 10:
                 await robot.turn_in_place(degrees(15)).wait_for_completed()
             else:
-                if turn_num < 25:
-                    await robot.turn_in_place(degrees(15)).wait_for_completed()
-                    turn_num += 1
-                else:
-                    await robot.drive_straight(distance_mm(40), speed_mmps(40), False, False,
-                                                           0).wait_for_completed()
-        gui.show_mean(m_x, m_y, m_h, m_confident)
-        gui.show_particles(pf.particles)
-        robbie = Robot(robot.pose.position.x, robot.pose.position.y, robot.pose_angle.degrees)
-        gui.show_robot(robbie)
-        gui.updated.set()
+                await robot.turn_in_place(degrees(15)).wait_for_completed()
+                # await robot.drive_straight(distance_mm(40), speed_mmps(40), False, False,
+                #                                            0).wait_for_completed()
+
     ############################################################################
 
 
@@ -225,12 +253,12 @@ class CozmoThread(threading.Thread):
     def run(self):
         cozmo.run_program(run, use_viewer=False)
 
-class KidnappingThread(threading.Thread):
-    def __init__(self):
-        threading.Thread.__init__(self, daemon=False)
-
-    def is_kidnapped(self):
-        cozmo.run_program(is_kidnapped, use_viewer=False)
+# class KidnappingThread(threading.Thread):
+#     def __init__(self):
+#         threading.Thread.__init__(self, daemon=False)
+#
+#     def is_kidnapped(self):
+#         cozmo.run_program(is_kidnapped, use_viewer=False)
 
 if __name__ == '__main__':
 
@@ -238,9 +266,9 @@ if __name__ == '__main__':
     cozmo_thread = CozmoThread()
     cozmo_thread.start()
 
-    # kidnapping thread
-    kidnap_thread = KidnappingThread()
-    kidnap_thread.is_kidnapped()
+    # # kidnapping thread
+    # kidnap_thread = KidnappingThread()
+    # kidnap_thread.is_kidnapped()
 
     # init
     grid = CozGrid(Map_filename)

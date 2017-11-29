@@ -62,10 +62,10 @@ def compute_mean_pose(particles, confident_dist=1):
     # actually are in the immediate vicinity
     m_count = 0
     for p in particles:
-        if grid_distance(p.x, p.y, m_x, m_y) < 1.35:
+        if grid_distance(p.x, p.y, m_x, m_y) < 1.45:
             m_count += 1
-
-    return m_x, m_y, m_h, m_count > len(particles) * 0.95
+    print(m_count / len(particles))
+    return m_x, m_y, m_h, m_count > len(particles) * 0.84
 
 
 def add_gaussian_noise(data, sigma):
