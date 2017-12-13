@@ -202,6 +202,7 @@ async def run(robot: cozmo.robot.Robot):
 
 def move_dist_in_global_frame(robot, m_x,m_y,m_h, dest_x,dest_y):
     #help
+    goal = [dest_x,dest_y]
     # Part 1: Figure out Robot's origin + theta offset
     # For consistency, the global frame is A, the one used by the bot is B
     # need tp find angle theta_b_a (radians) that represents angle FROM X_b TO X_a
@@ -242,6 +243,7 @@ def move_dist_in_global_frame(robot, m_x,m_y,m_h, dest_x,dest_y):
     await robot.turn_in_place(degrees(delta_t)).wait_for_completed()
     #dist = math.sqrt(r_to_goal_in_B[0]**2 + r_to_goal_in_B[1]**2)
     await robot.drive_straight(distance_inches(dist), speed_mmps(40)).wait_for_completed()
+    return m_h + delta_t
 
 
 class CozmoThread(threading.Thread):
