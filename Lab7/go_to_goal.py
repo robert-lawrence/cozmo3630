@@ -170,24 +170,26 @@ async def run(robot: cozmo.robot.Robot):
                     role = "storage"
             print(role)
             print(m_x, m_y, m_h)
+            time.sleep(3)
             h_offset_rad = math.radians(robot.pose_angle.degrees - m_h)
-            # turn and look in correct direction (aka left)
-            robot.turn_in_place(degrees( (180 - m_h) % 360 ))
 
 
             cube = None
-            robot.drive_wheel_motors(-15, 15)
             print("wheels driven")
-            while cube is None:
-                cube = await robot.world.wait_for_observed_light_cube()
-            robot.stop_all_motors()
-            print(cube.pose)
-            time.sleep(3)
-            ##Cube found
             init_rx = robot.pose.position.x
             init_ry = robot.pose.position.y
             init_rh = robot.pose_angle.degrees
-            await robot.pickup_object(cube, use_pre_dock_pose=False, num_retries=3).wait_for_completed()
+            while cube is None:
+                try:
+                    cube = await robot.world.wait_for_observed_light_cube(timeout=.5)
+                except:
+                    await robot.turn_in_place(degrees(15)).wait_for_completed()
+            # robot.stop_all_motors()
+            print(cube.pose)
+            time.sleep(3)
+            ##Cube found
+
+            await robot.pickup_object(cube, use_pre_dock_pose=False, num_retries=6).wait_for_completed()
             #TODO: drive to correct destination
             #TODO: drop object
             #TODO: return to starting position, look in right direction
@@ -195,8 +197,8 @@ async def run(robot: cozmo.robot.Robot):
             after_ry = robot.pose.position.y
             after_rh = robot.pose_angle.degrees
 
-            dx = after_rx - init_rx
-            dy = after_ry - init_ry
+            dx = .03937 * (after_rx - init_rx)
+            dy = .03937 * (after_ry - init_ry)
             dh = after_rh - init_rh
 
             new_x = m_x + (dx * math.cos(h_offset_rad)) - (dy * math.sin(h_offset_rad))
@@ -204,6 +206,7 @@ async def run(robot: cozmo.robot.Robot):
             new_h = m_h + dh
 
             print(new_x, new_y, new_h)
+            time.sleep(3)
 
             await move_dist_in_global_frame(robot, new_x, new_y, new_h, 13, 9)
 
@@ -232,7 +235,7 @@ async def move_dist_in_global_frame(robot, m_x,m_y,m_h, dest_x, dest_y):
     # Solution: We have robot pos in both B and A. a_to_r, b_to_r, and t make a triangle.
     # First we must get R_b in the coordinate system of A, then a_to_r - b_to_r = t.
     a_to_r_in_A = (m_x,m_y)
-    b_to_r_in_B = (robot.pose.position.x/10., robot.pose.position.y/10.) # in mm, right?
+    b_to_r_in_B = (robot.pose.position.x * .03937, robot.pose.position.y * .03937) # in mm, right?
     b_to_r_in_A_x = (math.cos(theta_a_b)* b_to_r_in_B[0] \
             - math.sin(theta_a_b)*b_to_r_in_B[1])
     b_to_r_in_A_y = (math.sin(theta_a_b) * b_to_r_in_B[0] \
@@ -253,9 +256,10 @@ async def move_dist_in_global_frame(robot, m_x,m_y,m_h, dest_x, dest_y):
     actual_head = math.degrees(math.atan2(goal[1],goal[0])) - m_h
 
 
-    dist = (goal[0]-m_x,goal[1]-m_y)
+    dist = (goal[0]-m_x, goal[1]-m_y)
     delta_t = math.degrees(math.atan2(dist[1], dist[0])) - m_h
     dist = math.sqrt(dist[0]**2 + dist[1]**2)
+    print("DISTANCE TO TARGET: {}", dist)
 
     await robot.turn_in_place(degrees(delta_t)).wait_for_completed()
     #dist = math.sqrt(r_to_goal_in_B[0]**2 + r_to_goal_in_B[1]**2)
