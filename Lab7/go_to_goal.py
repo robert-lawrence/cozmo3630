@@ -16,7 +16,7 @@ from particle import Particle, Robot
 from setting import *
 from particle_filter import *
 from utils import *
-from cozmo.util import distance_mm, speed_mmps, degrees, distance_inches
+from cozmo.util import distance_mm, speed_mmps, degrees, distance_inches, Pose
 
 # camera params
 camK = np.matrix([[295, 0, 160], [0, 295, 120], [0, 0, 1]], dtype='float32')
@@ -141,6 +141,7 @@ async def run(robot: cozmo.robot.Robot):
     #start particle filter
     pf = ParticleFilter(grid)
     await robot.set_head_angle(degrees(0)).wait_for_completed()
+    await robot.set_lift_height(0).wait_for_completed()
     state = "unknown"
     role = ""
     ############################################################################
@@ -169,15 +170,16 @@ async def run(robot: cozmo.robot.Robot):
                     role = "storage"
 
             #TODO: turn and look in correct direction (aka left)
-
-
             cube = None
+            robot.drive_wheel_motors(-15, 15)
+            print("wheels driven")
             while cube is None:
-                cube = await robot.world.wait_for_obserbed_light_cube()
-                #TODO: double check that cube is in the right zone
-
+                cube = await robot.world.wait_for_observed_light_cube()
+            robot.stop_all_motors()
+            print(cube.pose)
+            time.sleep(3)
             ##Cube found
-            robot.pickup_object(cube, use_pre_dock_pose=False)
+            await robot.pickup_object(cube, use_pre_dock_pose=False, num_retries=3).wait_for_completed()
             #TODO: drive to correct destination
             #TODO: drop object
             #TODO: return to starting position, look in right direction
