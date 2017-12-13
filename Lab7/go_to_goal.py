@@ -168,7 +168,8 @@ async def run(robot: cozmo.robot.Robot):
                     role = "pickup"
                 else:
                     role = "storage"
-
+            print(role)
+            print(m_x, m_y, m_h)
             # turn and look in correct direction (aka left)
             robot.turn_in_place(degrees( (180 - m_h) % 360 ))
 
@@ -182,11 +183,24 @@ async def run(robot: cozmo.robot.Robot):
             print(cube.pose)
             time.sleep(3)
             ##Cube found
+            init_rx = robot.pose.position.x
+            init_ry = robot.pose.position.y
+            init_rh = robot.pose_angle.degrees
             await robot.pickup_object(cube, use_pre_dock_pose=False, num_retries=3).wait_for_completed()
             #TODO: drive to correct destination
             #TODO: drop object
             #TODO: return to starting position, look in right direction
-            await move_dist_in_global_frame(robot, m_x, m_y, m_h, 13, 9)
+            after_rx = robot.pose.position.x
+            after_ry = robot.pose.position.y
+            after_rh = robot.pose_angle.degrees
+
+            dx = after_rx - init_rx
+            dy = after_ry - init_ry
+            dh = after_rh - init_rh
+
+            print(m_x, m_y, m_h)
+
+            await move_dist_in_global_frame(robot, m_x + dx, m_y + dy, m_h + dh, 13, 9)
 
 
         elif state == "unknown":
