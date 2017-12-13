@@ -41,7 +41,7 @@ def motion_update(particles, odom):
     trans_pred = math.sqrt(((old_robo_x - new_robo_x)**2) + ((old_robo_y - new_robo_y)**2))
     rot2_pred = diff_heading_deg(diff_heading_deg(new_robo_h, old_robo_h), rot1_pred)
 
-    alpha1 = 0.06
+    alpha1 = 0.04
     alpha2 = 0.02
     alpha3 = 0.04
     alpha4 = 0.01

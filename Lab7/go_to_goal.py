@@ -169,7 +169,10 @@ async def run(robot: cozmo.robot.Robot):
                 else:
                     role = "storage"
 
-            #TODO: turn and look in correct direction (aka left)
+            # turn and look in correct direction (aka left)
+            robot.turn_in_place(degrees( (180 - m_h) % 360 ))
+
+
             cube = None
             robot.drive_wheel_motors(-15, 15)
             print("wheels driven")
@@ -185,46 +188,6 @@ async def run(robot: cozmo.robot.Robot):
             #TODO: return to starting position, look in right direction
 
 
-            # Part 1: Figure out Robot's origin + theta offset
-            # For consistency, the global frame is A, the one used by the bot is B
-            # need tp find angle theta_b_a (radians) that represents angle FROM X_b TO X_a
-            theta_a_b = math.radians(m_h - robot.pose_angle.degrees)
-            theta_b_a = math.radians(robot.pose_angle.degrees - m_h)
-
-            # need to find vector t (in frame A) that represents the origin of B in A
-            # Solution: We have robot pos in both B and A. a_to_r, b_to_r, and t make a triangle.
-            # First we must get R_b in the coordinate system of A, then a_to_r - b_to_r = t.
-            a_to_r_in_A = (m_x,m_y)
-            b_to_r_in_B = (robot.pose.position.x/10., robot.pose.position.y/10.) # in mm, right?
-            b_to_r_in_A_x = (math.cos(theta_a_b)* b_to_r_in_B[0] \
-                    - math.sin(theta_a_b)*b_to_r_in_B[1])
-            b_to_r_in_A_y = (math.sin(theta_a_b) * b_to_r_in_B[0] \
-                    + math.cos(theta_a_b) * b_to_r_in_B[1])
-            b_to_r_in_A = (b_to_r_in_A_x, b_to_r_in_A_y)
-            t = ( a_to_r_in_A[0] - b_to_r_in_B[0], a_to_r_in_A[1] - b_to_r_in_B[1] )
-
-            # Part 2: Find goal_in_B
-            goal_in_A = (goal[0],goal[1])
-            goal_in_B_x = (math.cos(theta_b_a) * goal_in_A[0] \
-                    - math.sin(theta_b_a) *goal_in_A[1] \
-                    + t[0])
-            goal_in_B_y = (math.sin(theta_b_a) * goal_in_A[0] \
-                    + math.cos(theta_b_a) * goal_in_A[1] \
-                    + t[1])
-            r_to_goal_in_B = (goal_in_B_x - b_to_r_in_B[0], goal_in_B_y - b_to_r_in_B[1])
-            head = math.degrees(math.atan2(r_to_goal_in_B[1], r_to_goal_in_B[0])) - robot.pose_angle.degrees
-            actual_head = math.degrees(math.atan2(goal[1],goal[0])) - m_h
-
-
-            dist = (goal[0]-m_x,goal[1]-m_y)
-            delta_t = math.degrees(math.atan2(dist[1], dist[0])) - m_h
-            dist = math.sqrt(dist[0]**2 + dist[1]**2)
-
-
-
-            await robot.turn_in_place(degrees(delta_t)).wait_for_completed()
-            #dist = math.sqrt(r_to_goal_in_B[0]**2 + r_to_goal_in_B[1]**2)
-            await robot.drive_straight(distance_inches(dist), speed_mmps(40)).wait_for_completed()
 
         elif state == "unknown":
             last_pose = robot.pose
@@ -236,6 +199,49 @@ async def run(robot: cozmo.robot.Robot):
                 #                                            0).wait_for_completed()
 
     ############################################################################
+
+def move_dist_in_global_frame(robot, m_x,m_y,m_h, dest_x,dest_y):
+    #help
+    # Part 1: Figure out Robot's origin + theta offset
+    # For consistency, the global frame is A, the one used by the bot is B
+    # need tp find angle theta_b_a (radians) that represents angle FROM X_b TO X_a
+    theta_a_b = math.radians(m_h - robot.pose_angle.degrees)
+    theta_b_a = math.radians(robot.pose_angle.degrees - m_h)
+
+    # need to find vector t (in frame A) that represents the origin of B in A
+    # Solution: We have robot pos in both B and A. a_to_r, b_to_r, and t make a triangle.
+    # First we must get R_b in the coordinate system of A, then a_to_r - b_to_r = t.
+    a_to_r_in_A = (m_x,m_y)
+    b_to_r_in_B = (robot.pose.position.x/10., robot.pose.position.y/10.) # in mm, right?
+    b_to_r_in_A_x = (math.cos(theta_a_b)* b_to_r_in_B[0] \
+            - math.sin(theta_a_b)*b_to_r_in_B[1])
+    b_to_r_in_A_y = (math.sin(theta_a_b) * b_to_r_in_B[0] \
+            + math.cos(theta_a_b) * b_to_r_in_B[1])
+    b_to_r_in_A = (b_to_r_in_A_x, b_to_r_in_A_y)
+    t = ( a_to_r_in_A[0] - b_to_r_in_B[0], a_to_r_in_A[1] - b_to_r_in_B[1] )
+
+    # Part 2: Find goal_in_B
+    goal_in_A = (goal[0],goal[1])
+        goal_in_B_x = (math.cos(theta_b_a) * goal_in_A[0] \
+            - math.sin(theta_b_a) *goal_in_A[1] \
+            + t[0])
+    goal_in_B_y = (math.sin(theta_b_a) * goal_in_A[0] \
+            + math.cos(theta_b_a) * goal_in_A[1] \
+            + t[1])
+    r_to_goal_in_B = (goal_in_B_x - b_to_r_in_B[0], goal_in_B_y - b_to_r_in_B[1])
+    head = math.degrees(math.atan2(r_to_goal_in_B[1], r_to_goal_in_B[0])) - robot.pose_angle.degrees
+    actual_head = math.degrees(math.atan2(goal[1],goal[0])) - m_h
+
+
+    dist = (goal[0]-m_x,goal[1]-m_y)
+    delta_t = math.degrees(math.atan2(dist[1], dist[0])) - m_h
+    dist = math.sqrt(dist[0]**2 + dist[1]**2)
+
+
+
+    await robot.turn_in_place(degrees(delta_t)).wait_for_completed()
+    #dist = math.sqrt(r_to_goal_in_B[0]**2 + r_to_goal_in_B[1]**2)
+    await robot.drive_straight(distance_inches(dist), speed_mmps(40)).wait_for_completed()
 
 
 class CozmoThread(threading.Thread):
