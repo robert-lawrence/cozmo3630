@@ -186,7 +186,7 @@ async def run(robot: cozmo.robot.Robot):
             #TODO: drive to correct destination
             #TODO: drop object
             #TODO: return to starting position, look in right direction
-
+            await move_dist_in_global_frame(robot, m_x, m_y, m_h, 13, 9)
 
 
         elif state == "unknown":
@@ -200,7 +200,7 @@ async def run(robot: cozmo.robot.Robot):
 
     ############################################################################
 
-def move_dist_in_global_frame(robot, m_x,m_y,m_h, dest_x,dest_y):
+async def move_dist_in_global_frame(robot, m_x,m_y,m_h, dest_x, dest_y):
     #help
     goal = [dest_x,dest_y]
     # Part 1: Figure out Robot's origin + theta offset
@@ -223,11 +223,11 @@ def move_dist_in_global_frame(robot, m_x,m_y,m_h, dest_x,dest_y):
 
     # Part 2: Find goal_in_B
     goal_in_A = (goal[0],goal[1])
-        goal_in_B_x = (math.cos(theta_b_a) * goal_in_A[0] \
+    goal_in_B_x = (math.cos(theta_b_a) * goal_in_A[0] \
             - math.sin(theta_b_a) *goal_in_A[1] \
             + t[0])
-    goal_in_B_y = (math.sin(theta_b_a) * goal_in_A[0] \
-            + math.cos(theta_b_a) * goal_in_A[1] \
+    goal_in_B_y = (math.sin(theta_b_a) * goal_in_A[0]
+            + math.cos(theta_b_a) * goal_in_A[1]
             + t[1])
     r_to_goal_in_B = (goal_in_B_x - b_to_r_in_B[0], goal_in_B_y - b_to_r_in_B[1])
     head = math.degrees(math.atan2(r_to_goal_in_B[1], r_to_goal_in_B[0])) - robot.pose_angle.degrees
@@ -237,8 +237,6 @@ def move_dist_in_global_frame(robot, m_x,m_y,m_h, dest_x,dest_y):
     dist = (goal[0]-m_x,goal[1]-m_y)
     delta_t = math.degrees(math.atan2(dist[1], dist[0])) - m_h
     dist = math.sqrt(dist[0]**2 + dist[1]**2)
-
-
 
     await robot.turn_in_place(degrees(delta_t)).wait_for_completed()
     #dist = math.sqrt(r_to_goal_in_B[0]**2 + r_to_goal_in_B[1]**2)
