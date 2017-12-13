@@ -141,7 +141,8 @@ async def run(robot: cozmo.robot.Robot):
     #start particle filter
     pf = ParticleFilter(grid)
     await robot.set_head_angle(degrees(0)).wait_for_completed()
-    state = "In motion"
+    state = "unknown"
+    role = ""
     ############################################################################
     ######################### YOUR CODE HERE####################################
     turn_num = 0
@@ -157,15 +158,30 @@ async def run(robot: cozmo.robot.Robot):
         robbie = Robot(robot.pose.position.x, robot.pose.position.y, robot.pose_angle.degrees)
         gui.show_robot(robbie)
         gui.updated.set()
-        if robot.is_picked_up:
-            await robot.say_text("Hey put me down!!").wait_for_completed()
-            pf = ParticleFilter(grid)
-            time.sleep(5)
-            state = "In motion"
-            await robot.set_head_angle(degrees(0)).wait_for_completed()
-        elif m_confident and state == "In motion":
-            print("Going to the goal pose")
-            print ("X: {}, Y:{}".format(m_x,m_y))
+        if m_confident:
+            state = "known"
+            #TODO: relax the constraints on m_confident
+        if state == "known":
+            if role == "":
+                if m_x < 130:
+                    role = "pickup"
+                else:
+                    role = "storage"
+
+            #TODO: turn and look in correct direction (aka left)
+
+
+            cube = None
+            while cube is None:
+                cube = await robot.world.wait_for_obserbed_light_cube()
+                #TODO: double check that cube is in the right zone
+
+            #Cube found
+            #TODO: robot.pickup_object()
+            #TODO: drive to correct destination
+            #TODO: drop object
+            #TODO: return to starting position, look in right direction
+
 
             # Part 1: Figure out Robot's origin + theta offset
             # For consistency, the global frame is A, the one used by the bot is B
@@ -196,45 +212,19 @@ async def run(robot: cozmo.robot.Robot):
             r_to_goal_in_B = (goal_in_B_x - b_to_r_in_B[0], goal_in_B_y - b_to_r_in_B[1])
             head = math.degrees(math.atan2(r_to_goal_in_B[1], r_to_goal_in_B[0])) - robot.pose_angle.degrees
             actual_head = math.degrees(math.atan2(goal[1],goal[0])) - m_h
-            print("Calculated Head: " + str(head) + " Actual Head: " + str(actual_head))
-            print("Observed theta: " + str(m_h) + "Calculated theta: " + str(robot.pose_angle.degrees + theta_a_b))
 
 
             dist = (goal[0]-m_x,goal[1]-m_y)
-            print(dist)
             delta_t = math.degrees(math.atan2(dist[1], dist[0])) - m_h
             dist = math.sqrt(dist[0]**2 + dist[1]**2)
-            print("M_H: " + str(m_h))
-            print("M_X: " + str(m_x))
-            print("M_Y: " + str(m_y))
-            print("Delta_t: " + str(delta_t))
-            print("Dist: " + str(dist))
 
 
 
             await robot.turn_in_place(degrees(delta_t)).wait_for_completed()
             #dist = math.sqrt(r_to_goal_in_B[0]**2 + r_to_goal_in_B[1]**2)
             await robot.drive_straight(distance_inches(dist), speed_mmps(40)).wait_for_completed()
-            # print("Vectors:")
-            # print(m_x,m_y)
-            # print(str(math.degrees(theta_a_b)) + " + " + str(robot.pose_angle.degrees))
-            # print(b_to_r_in_B)
-            # print(goal_in_A)
-            # print((goal_in_B_x,goal_in_B_y))
-            # print(t)
-            # print(r_to_goal_in_B)
 
-            # h_offset *= -1
-            # local_x = math.cos(h_offset)*(goal[0]-x_offset) - math.sin(h_offset)*(goal[1]-y_offset)
-            # local_y = math.sin(h_offset)*(goal[0]-x_offset) + math.cos(h_offset)*(goal[1]-y_offset)
-
-            # goal_pose = cozmo.util.Pose(10*goal_in_B_x, 10*goal_in_B_y, goal[2], angle_z=degrees(goal[2]))
-            # print(robot.pose)
-            # await robot.go_to_pose(goal_pose, relative_to_robot=True, in_parallel=False).wait_for_completed()
-            await robot.say_text("I did it!!").wait_for_completed()
-            print(robot.pose)
-            state = "Wait to be picked up"
-        elif state == "In motion":
+        elif state == "unknown":
             last_pose = robot.pose
             if abs(m_x - 130) < 20 and abs(m_y - 90) < 10:
                 await robot.turn_in_place(degrees(15)).wait_for_completed()
