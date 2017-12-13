@@ -170,6 +170,7 @@ async def run(robot: cozmo.robot.Robot):
                     role = "storage"
             print(role)
             print(m_x, m_y, m_h)
+            h_offset_rad = math.radians(robot.pose_angle.degrees - m_h)
             # turn and look in correct direction (aka left)
             robot.turn_in_place(degrees( (180 - m_h) % 360 ))
 
@@ -198,9 +199,13 @@ async def run(robot: cozmo.robot.Robot):
             dy = after_ry - init_ry
             dh = after_rh - init_rh
 
-            print(m_x, m_y, m_h)
+            new_x = m_x + (dx * math.cos(h_offset_rad)) - (dy * math.sin(h_offset_rad))
+            new_y = m_y + (dx * math.sin(h_offset_rad)) + (dy * math.cos(h_offset_rad))
+            new_h = m_h + dh
 
-            await move_dist_in_global_frame(robot, m_x + dx, m_y + dy, m_h + dh, 13, 9)
+            print(new_x, new_y, new_h)
+
+            await move_dist_in_global_frame(robot, new_x, new_y, new_h, 13, 9)
 
 
         elif state == "unknown":
