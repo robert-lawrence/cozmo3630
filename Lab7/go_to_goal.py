@@ -176,8 +176,8 @@ async def run(robot: cozmo.robot.Robot):
                 cube = await robot.world.wait_for_obserbed_light_cube()
                 #TODO: double check that cube is in the right zone
 
-            #Cube found
-            #TODO: robot.pickup_object()
+            ##Cube found
+            robot.pickup_object(cube, use_pre_dock_pose=False)
             #TODO: drive to correct destination
             #TODO: drop object
             #TODO: return to starting position, look in right direction
