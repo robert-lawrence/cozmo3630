@@ -183,7 +183,6 @@ async def run(robot: cozmo.robot.Robot):
             while cube is None:
                 try:
                     cube = await robot.world.wait_for_observed_light_cube(timeout=.5)
-                    print("ANYTHINGGGGGGGGGGGGGGGGGGGGGGGGGGGGG1")
                     after_rx = robot.pose.position.x
                     after_ry = robot.pose.position.y
                     after_rh = robot.pose_angle.degrees
@@ -339,7 +338,6 @@ def get_cube_global_pose(robot, m_x,m_y,m_h, cube_x, cube_y):
     goal_in_A_y = (math.sin(theta_a_b) * goal_in_B[0]
             + math.cos(theta_a_b) * goal_in_B[1]
             + t[1])
-    print("ANYTHINGGGGGGGGGGGGGGGGGGGGGGGGGGGGG3")
     return goal_in_A_x,goal_in_A_y
 
 
