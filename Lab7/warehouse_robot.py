@@ -196,6 +196,7 @@ async def run(robot: cozmo.robot.Robot):
                     #init_rx = after_rx
                     #init_ry = after_ry
                     #init_rh = after_rh
+                    print("rotated pose: " + str(new_x) + ", " + str(new_y) + ", " + str(new_h))
                     cube_pose = get_cube_global_pose(robot, new_x, new_y, new_h, cube.pose.position.x * .03937,
                                                      cube.pose.position.y * .03937)
                     #start if-else for diff areas:
