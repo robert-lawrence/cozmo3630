@@ -171,8 +171,8 @@ async def run(robot: cozmo.robot.Robot):
             print(role)
             print(m_x, m_y, m_h)
             time.sleep(3)
-            h_offset = robot.pose_angle.degrees - m_h
-            h_offset_rad = math.radians(robot.pose_angle.degrees - m_h)
+            h_offset = m_h - robot.pose_angle.degrees 
+            h_offset_rad = math.radians(m_h - robot.pose_angle.degrees)
 
 
             cube = None
