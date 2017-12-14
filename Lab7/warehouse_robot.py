@@ -183,6 +183,7 @@ async def run(robot: cozmo.robot.Robot):
             while cube is None:
                 try:
                     cube = await robot.world.wait_for_observed_light_cube(timeout=.5)
+                    print("ANYTHINGGGGGGGGGGGGGGGGGGGGGGGGGGGGG1")
                     after_rx = robot.pose.position.x
                     after_ry = robot.pose.position.y
                     after_rh = robot.pose_angle.degrees
@@ -239,7 +240,7 @@ async def run(robot: cozmo.robot.Robot):
             time.sleep(3)
 
             if role == "pickup":
-                await move_dist_in_global_frame(robot, new_x, new_y, new_h, 11, 9)
+                await move_dist_in_global_frame(robot, new_x, new_y, new_h, 12, 9)
                 await robot.place_object_on_ground_here(cube).wait_for_completed()
                 await move_dist_in_global_frame(robot, 11, 9, robot.pose_angle.degrees - h_offset, 9, 9)
                 pf = ParticleFilter(grid)
@@ -248,7 +249,7 @@ async def run(robot: cozmo.robot.Robot):
                 await move_dist_in_global_frame(robot, new_x, new_y, new_h, 23, 15 * storage_cube_mult)
                 await robot.place_object_on_ground_here(cube).wait_for_completed() #TODO: put second cube somewhere else
                 await move_dist_in_global_frame(robot, 23, 15 * storage_cube_mult,
-                                                robot.pose_angle.degrees - h_offset, 20, 9)
+                                                robot.pose_angle.degrees - h_offset, 23, 9)
                 storage_cube_mult -= .25
                 pf = ParticleFilter(grid)
                 state = "unknown"
@@ -338,6 +339,7 @@ def get_cube_global_pose(robot, m_x,m_y,m_h, cube_x, cube_y):
     goal_in_A_y = (math.sin(theta_a_b) * goal_in_B[0]
             + math.cos(theta_a_b) * goal_in_B[1]
             + t[1])
+    print("ANYTHINGGGGGGGGGGGGGGGGGGGGGGGGGGGGG3")
     return goal_in_A_x,goal_in_A_y
 
 
