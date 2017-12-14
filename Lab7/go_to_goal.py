@@ -144,15 +144,13 @@ async def run(robot: cozmo.robot.Robot):
     await robot.set_lift_height(0).wait_for_completed()
     state = "unknown"
     role = ""
+    storage_cube_mult = 1
     ############################################################################
     ######################### YOUR CODE HERE####################################
-    turn_num = 0
     while True:
         robo_odom = compute_odometry(robot.pose)
-        print(robo_odom)
         vis_markers = await image_processing(robot)
         markers_2d = cvt_2Dmarker_measurements(vis_markers)
-        print(markers_2d)
         m_x, m_y, m_h, m_confident = ParticleFilter.update(pf, robo_odom, markers_2d)
         gui.show_mean(m_x, m_y, m_h, m_confident)
         gui.show_particles(pf.particles)
@@ -164,7 +162,7 @@ async def run(robot: cozmo.robot.Robot):
             #TODO: relax the constraints on m_confident
         if state == "known":
             if role == "":
-                if m_x < 130:
+                if m_x < 13:
                     role = "pickup"
                 else:
                     role = "storage"
@@ -195,7 +193,8 @@ async def run(robot: cozmo.robot.Robot):
                     #init_rx = after_rx
                     #init_ry = after_ry
                     #init_rh = after_rh
-                    cube_pose = get_cube_global_pose(robot, new_x, new_y, new_h, cube.pose.position.x, cube.pose.position.y)
+                    cube_pose = get_cube_global_pose(robot, new_x, new_y, new_h, cube.pose.position.x * .03937,
+                                                     cube.pose.position.y * .03937)
                     #start if-else for diff areas:
                     if role == "pickup":
                         if cube_pose[0] >= 9 or cube_pose[1] <= 4:
@@ -203,6 +202,8 @@ async def run(robot: cozmo.robot.Robot):
                             cube = None
                             await robot.turn_in_place(degrees(15)).wait_for_completed()
                             continue
+                        else:
+                            print("In bound cube pose! " + str(cube_pose))
                     else:
                         if cube_pose[0] <= 9 or cube_pose[0] >= 17 or cube_pose[1] <= 4:
                             cube = None
@@ -239,10 +240,16 @@ async def run(robot: cozmo.robot.Robot):
                 await move_dist_in_global_frame(robot, new_x, new_y, new_h, 11, 9)
                 await robot.place_object_on_ground_here(cube).wait_for_completed()
                 await move_dist_in_global_frame(robot, 11, 9, robot.pose_angle.degrees - h_offset, 9, 9)
+                pf = ParticleFilter(grid)
+                state = "unknown"
             else:
-                await move_dist_in_global_frame(robot, new_x, new_y, new_h, 23, 11)
+                await move_dist_in_global_frame(robot, new_x, new_y, new_h, 23, 15 * storage_cube_mult)
                 await robot.place_object_on_ground_here(cube).wait_for_completed() #TODO: put second cube somewhere else
-                await move_dist_in_global_frame(robot, 23, 11, robot.pose_angles.degrees - h_offset, 18, 9)
+                await move_dist_in_global_frame(robot, 23, 15 * storage_cube_mult,
+                                                robot.pose_angle.degrees - h_offset, 20, 9)
+                storage_cube_mult -= .25
+                pf = ParticleFilter(grid)
+                state = "unknown"
 
 
 
