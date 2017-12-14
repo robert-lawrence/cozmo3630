@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# Lab 7 Robert Smith and Mitchell Myers
+
 import cv2
 import cozmo
 import numpy as np
