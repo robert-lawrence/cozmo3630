@@ -171,6 +171,7 @@ async def run(robot: cozmo.robot.Robot):
             print(role)
             print(m_x, m_y, m_h)
             time.sleep(3)
+            h_offset = robot.pose_angle.degrees - m_h
             h_offset_rad = math.radians(robot.pose_angle.degrees - m_h)
 
 
@@ -182,33 +183,34 @@ async def run(robot: cozmo.robot.Robot):
             while cube is None:
                 try:
                     cube = await robot.world.wait_for_observed_light_cube(timeout=.5)
+                    after_rx = robot.pose.position.x
+                    after_ry = robot.pose.position.y
+                    after_rh = robot.pose_angle.degrees
+                    dx = .03937 * (after_rx - init_rx)
+                    dy = .03937 * (after_ry - init_ry)
+                    dh = after_rh - init_rh
+                    new_x = m_x + (dx * math.cos(h_offset_rad)) - (dy * math.sin(h_offset_rad))
+                    new_y = m_y + (dx * math.sin(h_offset_rad)) + (dy * math.cos(h_offset_rad))
+                    new_h = m_h + dh
+                    #init_rx = after_rx
+                    #init_ry = after_ry
+                    #init_rh = after_rh
+                    cube_pose = get_cube_global_pose(robot, new_x, new_y, new_h, cube.pose.position.x, cube.pose.position.y)
+                    #start if-else for diff areas:
+                    if role == "pickup":
+                        if cube_pose[0] >= 9 or cube_pose[1] <= 4:
+                            print ("Cube out of bounds! " + str(cube_pose))
+                            cube = None
+                            await robot.turn_in_place(degrees(15)).wait_for_completed()
+                            continue
+                    else:
+                        if cube_pose[0] <= 9 or cube_pose[0] >= 17 or cube_pose[1] <= 4:
+                            cube = None
+                            print ("Cube out of bounds! " + str(cube_pose))
+                            await robot.turn_in_place(degrees(15)).wait_for_completed()
+                            continue
                 except:
                     await robot.turn_in_place(degrees(15)).wait_for_completed()
-                #TODO: check if cube is in right spot
-                after_rx = robot.pose.position.x
-                after_ry = robot.pose.position.y
-                after_rh = robot.pose.pose_angle.degrees
-                dx = .03937 * (after_rx - init_rx)
-                dy = .03937 * (after_ry - init_ry)
-                dh = after_rh - init_rh
-                new_x = m_x + (dx * math.cos(h_offset_rad)) - (dy * math.sin(h_offset_rad))
-                new_y = m_y + (dx * math.sin(h_offset_rad)) + (dy * math.cos(h_offset_rad))
-                new_h = m_h + dh
-                init_rx = after_rx
-                init_ry = after_ry
-                init_rh = after_rh
-                cube_pose = get_cube_global_pose(robot, new_x, new_y, new_h, cube.pose.position.x, cube.pose.position.y)
-                #start if-else for diff areas:
-                if role == "pickup":
-                    if cube_pose[0] >= 9 or cube_pose[1] <= 4:
-                        cube = None
-                        await robot.turn_in_place(degrees(15)).wait_for_completed()
-                        continue
-                else:
-                    if cube_pose[0] <= 9 or cube_pose[0] >= 17 or cube_pose[1] <= 4:
-                        cube = None
-                        await robot.turn_in_place(degrees(15)).wait_for_completed()
-                        continue
 
             print(cube.pose)
             time.sleep(3)
@@ -233,7 +235,15 @@ async def run(robot: cozmo.robot.Robot):
             print(new_x, new_y, new_h)
             time.sleep(3)
 
-            await move_dist_in_global_frame(robot, new_x, new_y, new_h, 13, 9)
+            if role == "pickup":
+                await move_dist_in_global_frame(robot, new_x, new_y, new_h, 11, 9)
+                await robot.place_object_on_ground_here(cube).wait_for_completed()
+                await move_dist_in_global_frame(robot, 11, 9, robot.pose_angle.degrees - h_offset, 9, 9)
+            else:
+                await move_dist_in_global_frame(robot, new_x, new_y, new_h, 23, 11)
+                await robot.place_object_on_ground_here(cube).wait_for_completed() #TODO: put second cube somewhere else
+                await move_dist_in_global_frame(robot, 23, 11, robot.pose_angles.degrees - h_offset, 18, 9)
+
 
 
         elif state == "unknown":
@@ -272,10 +282,10 @@ async def move_dist_in_global_frame(robot, m_x,m_y,m_h, dest_x, dest_y):
     goal_in_A = (goal[0],goal[1])
     goal_in_B_x = (math.cos(theta_b_a) * goal_in_A[0] \
             - math.sin(theta_b_a) *goal_in_A[1] \
-            + t[0]) #should be negative?
+            - t[0]) #should be negative?
     goal_in_B_y = (math.sin(theta_b_a) * goal_in_A[0]
             + math.cos(theta_b_a) * goal_in_A[1]
-            + t[1]) #should be negative?
+            - t[1]) #should be negative?
     r_to_goal_in_B = (goal_in_B_x - b_to_r_in_B[0], goal_in_B_y - b_to_r_in_B[1])
     head = math.degrees(math.atan2(r_to_goal_in_B[1], r_to_goal_in_B[0])) - robot.pose_angle.degrees
     actual_head = math.degrees(math.atan2(goal[1],goal[0])) - m_h
