@@ -70,6 +70,7 @@ def measurement_update(particles, measured_marker_list, grid):
     """
     particle_weights = []
     DEBUG_num_valid = 0
+    DEBUG_num_almost_valid = 0
     # print("Time before particle weighting: ", time.time())
     for i in range(len(particles)):
         particle = particles[i]
@@ -90,8 +91,11 @@ def measurement_update(particles, measured_marker_list, grid):
 
         if not grid.is_in(particle.x, particle.y):
             particle_prob = 0
-        elif len(markers_visible_to_particle) != len(measured_marker_list):
+        elif len(markers_visible_to_particle) < len(measured_marker_list):
             particle_prob = 0
+        elif len(markers_visible_to_particle) > len(measured_marker_list):
+            particle_prob = 0.001 * get_particle_prob(marker_pairs)
+            DEBUG_num_almost_valid +=1
         elif len(marker_pairs) != 0:
             particle_prob = get_particle_prob(marker_pairs)
             DEBUG_num_valid += 1
@@ -103,6 +107,7 @@ def measurement_update(particles, measured_marker_list, grid):
     ## Normalization
     prob_sum = sum(particle_weights)
     print("Num valid: "+str(DEBUG_num_valid)+" Num markers: "+str(len(measured_marker_list)))
+    print("Num valid: "+str(DEBUG_num_valid)+ " Num counted anyway: "+str(DEBUG_num_almost_valid)+" Num markers: "+str(len(measured_marker_list)))
     if prob_sum != 0:
         for i in range(len(particle_weights)):
             particle_weights[i] = particle_weights[i] / prob_sum
