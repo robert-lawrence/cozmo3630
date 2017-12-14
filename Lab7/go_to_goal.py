@@ -188,6 +188,27 @@ async def run(robot: cozmo.robot.Robot):
                 after_rx = robot.pose.position.x
                 after_ry = robot.pose.position.y
                 after_rh = robot.pose.pose_angle.degrees
+                dx = .03937 * (after_rx - init_rx)
+                dy = .03937 * (after_ry - init_ry)
+                dh = after_rh - init_rh
+                new_x = m_x + (dx * math.cos(h_offset_rad)) - (dy * math.sin(h_offset_rad))
+                new_y = m_y + (dx * math.sin(h_offset_rad)) + (dy * math.cos(h_offset_rad))
+                new_h = m_h + dh
+                init_rx = after_rx
+                init_ry = after_ry
+                init_rh = after_rh
+                cube_pose = get_cube_global_pose(robot, new_x, new_y, new_h, cube.pose.position.x, cube.pose.position.y)
+                #start if-else for diff areas:
+                if role == "pickup":
+                    if cube_pose[0] >= 9 or cube_pose[1] <= 4:
+                        cube = None
+                        await robot.turn_in_place(degrees(15)).wait_for_completed()
+                        continue
+                else:
+                    if cube_pose[0] <= 9 or cube_pose[0] >= 17 or cube_pose[1] <= 4:
+                        cube = None
+                        await robot.turn_in_place(degrees(15)).wait_for_completed()
+                        continue
 
             print(cube.pose)
             time.sleep(3)
@@ -298,6 +319,7 @@ def get_cube_global_pose(robot, m_x,m_y,m_h, cube_x, cube_y):
     goal_in_A_y = (math.sin(theta_a_b) * goal_in_B[0]
             + math.cos(theta_a_b) * goal_in_B[1]
             + t[1])
+    return goal_in_A_x,goal_in_A_y
 
 
 class CozmoThread(threading.Thread):
