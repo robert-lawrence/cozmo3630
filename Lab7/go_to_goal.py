@@ -184,7 +184,11 @@ async def run(robot: cozmo.robot.Robot):
                     cube = await robot.world.wait_for_observed_light_cube(timeout=.5)
                 except:
                     await robot.turn_in_place(degrees(15)).wait_for_completed()
-            # robot.stop_all_motors()
+                #TODO: check if cube is in right spot
+                after_rx = robot.pose.position.x
+                after_ry = robot.pose.position.y
+                after_rh = robot.pose.pose_angle.degrees
+
             print(cube.pose)
             time.sleep(3)
             ##Cube found
@@ -247,10 +251,10 @@ async def move_dist_in_global_frame(robot, m_x,m_y,m_h, dest_x, dest_y):
     goal_in_A = (goal[0],goal[1])
     goal_in_B_x = (math.cos(theta_b_a) * goal_in_A[0] \
             - math.sin(theta_b_a) *goal_in_A[1] \
-            + t[0])
+            + t[0]) #should be negative?
     goal_in_B_y = (math.sin(theta_b_a) * goal_in_A[0]
             + math.cos(theta_b_a) * goal_in_A[1]
-            + t[1])
+            + t[1]) #should be negative?
     r_to_goal_in_B = (goal_in_B_x - b_to_r_in_B[0], goal_in_B_y - b_to_r_in_B[1])
     head = math.degrees(math.atan2(r_to_goal_in_B[1], r_to_goal_in_B[0])) - robot.pose_angle.degrees
     actual_head = math.degrees(math.atan2(goal[1],goal[0])) - m_h
@@ -265,6 +269,35 @@ async def move_dist_in_global_frame(robot, m_x,m_y,m_h, dest_x, dest_y):
     #dist = math.sqrt(r_to_goal_in_B[0]**2 + r_to_goal_in_B[1]**2)
     await robot.drive_straight(distance_inches(dist), speed_mmps(40)).wait_for_completed()
     return m_h + delta_t
+
+def get_cube_global_pose(robot, m_x,m_y,m_h, cube_x, cube_y):
+    goal = [cube_x,cube_y]
+    # Part 1: Figure out Robot's origin + theta offset
+    # For consistency, the global frame is A, the one used by the bot is B
+    # need tp find angle theta_b_a (radians) that represents angle FROM X_b TO X_a
+    theta_a_b = math.radians(m_h - robot.pose_angle.degrees)
+    theta_b_a = math.radians(robot.pose_angle.degrees - m_h)
+
+    # need to find vector t (in frame A) that represents the origin of B in A
+    # Solution: We have robot pos in both B and A. a_to_r, b_to_r, and t make a triangle.
+    # First we must get R_b in the coordinate system of A, then a_to_r - b_to_r = t.
+    a_to_r_in_A = (m_x,m_y)
+    b_to_r_in_B = (robot.pose.position.x * .03937, robot.pose.position.y * .03937) # in mm, right?
+    b_to_r_in_A_x = (math.cos(theta_a_b)* b_to_r_in_B[0] \
+            - math.sin(theta_a_b)*b_to_r_in_B[1])
+    b_to_r_in_A_y = (math.sin(theta_a_b) * b_to_r_in_B[0] \
+            + math.cos(theta_a_b) * b_to_r_in_B[1])
+    b_to_r_in_A = (b_to_r_in_A_x, b_to_r_in_A_y)
+    t = ( a_to_r_in_A[0] - b_to_r_in_B[0], a_to_r_in_A[1] - b_to_r_in_B[1] )
+
+    # Part 2: Find goal_in_A
+    goal_in_B = (goal[0],goal[1])
+    goal_in_A_x = (math.cos(theta_a_b) * goal_in_B[0] \
+            - math.sin(theta_a_b) *goal_in_B[1] \
+            + t[0])
+    goal_in_A_y = (math.sin(theta_a_b) * goal_in_B[0]
+            + math.cos(theta_a_b) * goal_in_B[1]
+            + t[1])
 
 
 class CozmoThread(threading.Thread):
