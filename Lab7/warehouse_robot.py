@@ -182,7 +182,7 @@ async def run(robot: cozmo.robot.Robot):
             init_rh = robot.pose_angle.degrees
             while cube is None:
                 try:
-                    cube = await robot.world.wait_for_observed_light_cube(timeout=.5)
+                    cube = await robot.world.wait_for_observed_light_cube(timeout=.5, include_existing=False)
                     after_rx = robot.pose.position.x
                     after_ry = robot.pose.position.y
                     after_rh = robot.pose_angle.degrees
@@ -241,13 +241,15 @@ async def run(robot: cozmo.robot.Robot):
 
             if role == "pickup":
                 await move_dist_in_global_frame(robot, new_x, new_y, new_h, 12, 9)
-                await robot.place_object_on_ground_here(cube).wait_for_completed()
+                await robot.place_object_on_ground_here(cube, num_retries=5).wait_for_completed()
+                await robot.set_lift_height(0).wait_for_completed()
                 await move_dist_in_global_frame(robot, 11, 9, robot.pose_angle.degrees - h_offset, 9, 9)
                 pf = ParticleFilter(grid)
                 state = "unknown"
             else:
                 await move_dist_in_global_frame(robot, new_x, new_y, new_h, 23, 15 * storage_cube_mult)
-                await robot.place_object_on_ground_here(cube).wait_for_completed() #TODO: put second cube somewhere else
+                await robot.place_object_on_ground_here(cube, num_retries=5).wait_for_completed() #TODO: put second cube somewhere else
+                await robot.set_lift_height(0).wait_for_completed()
                 await move_dist_in_global_frame(robot, 23, 15 * storage_cube_mult,
                                                 robot.pose_angle.degrees - h_offset, 23, 9)
                 storage_cube_mult -= .25
